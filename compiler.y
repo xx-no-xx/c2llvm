@@ -1,6 +1,6 @@
 %{
-	#include <stdio.h>
 	#include <cstdlib>
+	#include <cstdio>
 	extern int yylex(void); // 被yyparse()调用
 	extern int yyparse(void);  //提前声明
 
@@ -12,10 +12,10 @@
 		return 1;
 	}
 
-	int main() { // TODO: 测试用，为了实验它是否ok
-		yyparse();
-		return 0;
-	}
+//	int main() { // TODO: 测试用，为了实验它是否ok
+//		yyparse();
+//		return 0;
+//	}
 %}
 
 // 扩展的yylval， yylval会在lex和yacc中传递
