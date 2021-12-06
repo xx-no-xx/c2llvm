@@ -18,7 +18,7 @@
 - MAKEFILE
 
 ## 项目部署：
-> version: llvm-14.0.0
+> version: llvm-13.0.0
 - LLVM的安装：
 - 下载：https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0
 - 下载带project的那一个，解压后，编译
