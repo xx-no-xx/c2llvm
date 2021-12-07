@@ -50,16 +50,22 @@ void test_ast() {
     entry->append_code(ptr);
   }
 
+
   funcimp->debug();
+
+  // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用 
+  /* --------------------------------------------------------------- */
+  /* --------------------------------------------------------------- */
+  /* --------------------------------------------------------------- */
+  /* --------------------------------------------------------------- */
+  /* --------------------------------------------------------------- */
 
   // 下面我们来尝试生成
   auto astcontext = new ASTContext();
-
-  auto code_integer = integer->generate(astcontext);
-  funcimp->generate(astcontext);
+  funcimp->generate(astcontext); // 生成这个函数的IR
 
   std::cout << "\n\n\n\n\n\n" << std::endl;
-  astcontext->current_m->print(llvm::errs(), nullptr);
+  astcontext->current_m->print(llvm::errs(), nullptr); // 输出测试
 }
 
 int main(int argc, char** argv) {
