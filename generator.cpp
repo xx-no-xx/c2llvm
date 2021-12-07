@@ -2,7 +2,7 @@
 
 #include "generator.h"
 
-llvm::Value* ASTBasicBlock::generate(ASTContext& context) {
-  // TODO: 生成基本块
-  return nullptr;
-}
+//# llvm::Value* ASTBasicBlock::generate(ASTContext& context) {
+//#   // TODO: 生成基本块
+//#   return nullptr;
+//# }
