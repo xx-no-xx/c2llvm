@@ -119,9 +119,10 @@ typedef union YYSTYPE
 {
     int         int_value;
     double      double_value;
+    int         token;
 }
 /* Line 193 of yacc.c.  */
-#line 125 "y.tab.c"
+#line 126 "y.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -134,7 +135,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 138 "y.tab.c"
+#line 139 "y.tab.c"
 
 #ifdef short
 # undef short
@@ -420,8 +421,8 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    17,    17,    18,    21,    27,    28,    32,    38,    39,
-      43,    49
+       0,    18,    18,    19,    22,    28,    29,    33,    39,    40,
+      44,    50
 };
 #endif
 
@@ -1326,35 +1327,35 @@ yyreduce:
   switch (yyn)
     {
         case 4:
-#line 23 "calcyac.y"
+#line 24 "calcyac.y"
     {
         printf(">>%lf\n", (yyvsp[(1) - (2)].double_value));
     }
     break;
 
   case 6:
-#line 29 "calcyac.y"
+#line 30 "calcyac.y"
     {
         (yyval.double_value) = (yyvsp[(1) - (3)].double_value) + (yyvsp[(3) - (3)].double_value);
     }
     break;
 
   case 7:
-#line 33 "calcyac.y"
+#line 34 "calcyac.y"
     {
         (yyval.double_value) = (yyvsp[(1) - (3)].double_value) - (yyvsp[(3) - (3)].double_value);
     }
     break;
 
   case 9:
-#line 40 "calcyac.y"
+#line 41 "calcyac.y"
     {
         (yyval.double_value) = (yyvsp[(1) - (3)].double_value) * (yyvsp[(3) - (3)].double_value);
     }
     break;
 
   case 10:
-#line 44 "calcyac.y"
+#line 45 "calcyac.y"
     {
         (yyval.double_value) = (yyvsp[(1) - (3)].double_value) / (yyvsp[(3) - (3)].double_value);
     }
@@ -1362,7 +1363,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 1366 "y.tab.c"
+#line 1367 "y.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1576,7 +1577,7 @@ yyreturn:
 }
 
 
-#line 51 "calcyac.y"
+#line 52 "calcyac.y"
 
 int 
 yyerror(char const *str){

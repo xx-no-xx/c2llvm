@@ -8,9 +8,10 @@ int yyerror(const char *str); // 增加声明
 %union{
     int         int_value;
     double      double_value;
-}   // 声明记号和非 s终结符类型
+    int         token;
+}   // 声明记号和非终结符类型
 %token <double_value>       DOUBLE_LITERAL
-%token ADD SUB MUL DIV CR   // 记号的声明
+%token <token> ADD SUB MUL DIV CR   // 记号的声明
 %type <double_value> expression term primary_expression // 非终结符类型
 %%  // 规则区块
 line_list       // 多行规则

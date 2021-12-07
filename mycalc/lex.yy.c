@@ -456,11 +456,12 @@ char *yytext;
 #line 2 "calclex.l"
 #include <stdio.h>
 #include "y.tab.h"
+#define TOKEN(t) (yylval.token = t)
 
 int yywrap(){
     return 1;
 }
-#line 464 "lex.yy.c"
+#line 465 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -642,9 +643,9 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 9 "calclex.l"
+#line 10 "calclex.l"
 
-#line 648 "lex.yy.c"
+#line 649 "lex.yy.c"
 
 	if ( !(yy_init) )
 		{
@@ -729,48 +730,48 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 10 "calclex.l"
-return ADD;
+#line 11 "calclex.l"
+return TOKEN(ADD);
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 11 "calclex.l"
-return SUB;
+#line 12 "calclex.l"
+return TOKEN(SUB);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 12 "calclex.l"
-return MUL;
+#line 13 "calclex.l"
+return TOKEN(MUL);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 13 "calclex.l"
-return DIV;
+#line 14 "calclex.l"
+return TOKEN(DIV);
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 14 "calclex.l"
-return CR;
+#line 15 "calclex.l"
+return TOKEN(CR);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 15 "calclex.l"
+#line 16 "calclex.l"
 {
-    double temp;
-    sscanf(yytext, "%lf", &temp);
-    yylval.double_value = temp;
+    // double temp;
+    // sscanf(yytext, "%lf", &temp);
+    yylval.double_value = atoi(&yytext[0]);
     return DOUBLE_LITERAL;
 }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 21 "calclex.l"
+#line 22 "calclex.l"
 
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 22 "calclex.l"
+#line 23 "calclex.l"
 {
     fprintf(stderr, "lexical error.\n");
     exit(1);
@@ -778,10 +779,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 26 "calclex.l"
+#line 27 "calclex.l"
 ECHO;
 	YY_BREAK
-#line 785 "lex.yy.c"
+#line 786 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1778,6 +1779,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 26 "calclex.l"
+#line 27 "calclex.l"
 
 
