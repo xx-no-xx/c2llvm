@@ -15,11 +15,14 @@ clean:
 	$(RM) -rf output.ll output.bc output.o output.out output.json
 
 
-ast.o: ast.cpp ast.h
-#	clang++ $(CPPFLAGS) -o ast.cpp
+#ast.o: ast.cpp ast.h
+#	clang++ -fmodules -c $(CPPFLAGS) -o ast.cpp 
 
-genrator.o: generator.cpp generator.h
+#genrator.o: generator.cpp generator.h
 #	clang++ $(CPPFLAGS) -o generator.cpp
+
+%.o: %.cpp
+	clang++ -c $(CPPFLAGS) -o $@ $<
 
 lex:
 	flex -o lex.yy.cpp compiler.l

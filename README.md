@@ -19,6 +19,9 @@
 
 ## 项目部署：
 > version: llvm-13.0.0
+
+__使用make clean && make 来部署项目本身，否则有时候会炸__
+
 - LLVM的安装：
 - 下载：https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0
 - 下载带project的那一个，解压后，编译
@@ -55,6 +58,30 @@ make
 运行compiler，目前会运行正常yyparse, 还没有接入代码生成的部分。
 
 
+
+## 语法逻辑
+
+yacc自底向上运行。
+
+```
+entry（总体） -> areas
+
+areas -> areas | area
+
+area -> 全局变量区域，函数声明区域，函数定义区域)
+
+区域 -> TODO
+```
+
+继续向下推理。
+
+一般分为两类代码：声明类和实现类。
+
+- 在ast.h中，实现类的一个私有成员是声明类。例如函数实现的一个成员变量是函数声明类。
+
+- 变量也类似，有变量声明类。
+
+> 现在的例子是推理出一个inti=1;或者inti=j;的
 
 ---
 ---
