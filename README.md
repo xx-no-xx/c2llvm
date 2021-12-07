@@ -58,7 +58,9 @@ make
 __使用make clean && make 来部署项目本身，否则有时候会炸__
 运行compiler，目前会运行正常yyparse, 还没有接入代码生成的部分。
 
+`test_ast()`函数用来检查AST的生成
 
+`yyparse()`调用lex和yacc来解析输入
 
 ## 语法逻辑
 

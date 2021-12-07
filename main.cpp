@@ -46,6 +46,7 @@ void test_ast() {
     entry->append_code(ptr);
   }
 
+  funcimp->debug();
 }
 
 

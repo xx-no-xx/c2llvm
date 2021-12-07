@@ -32,6 +32,8 @@ class ASTNode {
     // 生成该AST结点对应的llvmIR代码
     return nullptr;
   }
+  virtual std::string get_class_name() { return "ASTNode"; }
+  virtual void debug() { std::cout << "this is " << get_class_name() << std::endl; }
   /*
   TODO:
     json化AST
@@ -40,11 +42,13 @@ class ASTNode {
 };
 
 class ASTPrototype : public ASTNode {
-  // 所有AST声明的基类
+  // 所有AST原型或者声明的基类
+  // 表达式不能作为左值
  public:
   ASTPrototype() {}
   virtual llvm::Value* generate(ASTContext& context) override {}
   virtual std::string get_class_name() { return "ASTPrototype"; }
+  virtual void debug() { std::cout << "this is " << get_class_name() << " " << std::endl; }
 };
 
 class ASTExpression : public ASTNode {
@@ -53,10 +57,11 @@ class ASTExpression : public ASTNode {
   ASTExpression() {}
   virtual llvm::Value* generate(ASTContext& context) override {}
   virtual std::string get_class_name() { return "ASTExpression"; }
+  virtual void debug() { std::cout << "this is " << get_class_name() << " " <<std::endl; }
 };
 
 class ASTGeneralStatement : public ASTPrototype {
-  // 常规的声明
+  // TODO: 没有用，预留
  public:
   ASTGeneralStatement() {}
   llvm::Value* generate(ASTContext& context) override {}
@@ -64,7 +69,7 @@ class ASTGeneralStatement : public ASTPrototype {
 };
 
 class ASTGeneralExpression : public ASTExpression {
-  // 常规的表达式
+  // TODO: 没有用，预留
  public:
   ASTGeneralExpression() {}
   llvm::Value* generate(ASTContext& context) override {}
@@ -72,16 +77,23 @@ class ASTGeneralExpression : public ASTExpression {
 };
 
 class ASTCodeBlockExpression : public ASTExpression {
-  // 基本块: 区分于LLVM的BasicBlock类
+  // 该类对应着一序列的代码块，及一些AST的序列 
   std::vector<ASTNode*> codes;
 
  public:
   ASTCodeBlockExpression() { codes.clear(); }
-  llvm::BasicBlock* BB;  // ! I have NO IDEA about what's doing here
+  llvm::BasicBlock* BB;  // ! I have NO IDEA about what this BB is doing here
   llvm::Value* generate(ASTContext& context) override {}
   std::string get_class_name() { return "ASTCodeBlockExpression"; }
-  void set_function(ASTFunctionImp*);
-  void append_code(ASTNode*);
+  void set_function(ASTFunctionImp*); // 设置代码块对应着哪一个函数的开头
+  void append_code(ASTNode*); // 将新的AST结点接在已有代码的末尾
+  void debug(void) override{ 
+    std::cout << "this is " << get_class_name() << " with " << codes.size() << " codes in here" << std::endl;
+    for(auto &code : codes) {
+      code->debug();
+      puts("");
+    }
+  }
 };
 
 class ASTVariableExpression : public ASTExpression {
@@ -96,6 +108,9 @@ class ASTVariableExpression : public ASTExpression {
   ASTVariableExpression(std::string _name) : name(_name) {}
   llvm::Value* generate(ASTContext& context) override {}
   std::string get_class_name(void) { return "ASTVariableExpression"; }
+  void debug(void) override{ 
+    std::cout << "var:" << name << " ";
+  }
 };
 
 class ASTVariableDefine : public ASTPrototype {
@@ -113,6 +128,12 @@ class ASTVariableDefine : public ASTPrototype {
       : type(_type), lhs(_lhs), rhs(_rhs) {}
   llvm::Value* generate(ASTContext& context) override {}
   std::string get_class_name(void) override { return "ASTVariableDefine"; }
+  void debug(void) override{ 
+    std::cout << "type:" << type << " ";
+    lhs->debug();
+    std::cout << " [ASSIGN FROM DEFINE]= ";
+    rhs->debug();
+  }
 };
 
 typedef ASTVariableDefine ARGdefine;  // 参数声明
@@ -131,6 +152,10 @@ class ASTFunctionProto : public ASTPrototype {
   llvm::Value* generate(ASTContext& context) override {}
   std::string get_class_name(void) override { return "ASTFunctionProto"; }
   std::string get_name(void) { return name; }
+  void debug(void) override {
+    // TODO: 展示参数
+    std::cout << "Function Prototype Name: " << name << std::endl;
+  }
 };
 
 class ASTFunctionImp : public ASTExpression {
@@ -145,6 +170,10 @@ class ASTFunctionImp : public ASTExpression {
       : prototype(_pro), function_entry(_entry) {}
   llvm::Value* generate(ASTContext& context) override {}
   void set_entry(ASTCodeBlockExpression*);
+  void debug(void) override {
+    prototype->debug();
+    function_entry->debug();
+  }
 };
 
 class ASTInteger : public ASTExpression {
@@ -155,6 +184,9 @@ class ASTInteger : public ASTExpression {
  public:
   ASTInteger(int _value) : value(_value) {}
   int get_value(void) { return value; }
+  void debug(void) override {
+    std::cout << "[INTEGER]" << value << " ";
+  }
 };
 
 class ASTBinaryExpression : public ASTExpression {
@@ -168,6 +200,11 @@ class ASTBinaryExpression : public ASTExpression {
   ASTBinaryExpression(char _operation, ASTExpression* _lhs,
                       ASTExpression* _rhs)
       : operation(_operation), lhs(_lhs), rhs(_rhs) {}
+  void debug(void) override {
+    lhs->debug();
+    std::cout << " [BinaryOperation]" << operation << " " ;
+    rhs->debug();
+  }
 };
 
 class ASTCallExpression : public ASTExpression {
@@ -180,6 +217,10 @@ class ASTCallExpression : public ASTExpression {
  public:
   ASTCallExpression(const std::string& _callee, std::vector<CallArgument> _args)
       : callee(_callee), args(_args) {}
+  void debug(void) override {
+    // TODO
+    return;
+  }
 };
 
 #endif
