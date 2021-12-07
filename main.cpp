@@ -1,3 +1,5 @@
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 
 #include "ast.h"
@@ -23,8 +25,7 @@ void test_ast() {
   // 造一个真正的函数实现
   auto funcimp = new ASTFunctionImp(funcproto, entry);
 
-
- // 如果碰到了一个纯粹的数字:
+  // 如果碰到了一个纯粹的数字:
   int value = 100;
   auto integer = new ASTInteger(value);
   // 和另一个纯的数字:
@@ -32,22 +33,34 @@ void test_ast() {
   int value2 = 200;
   auto integer2 = new ASTInteger(value2);
   // 现在造一个200 + 100的二元运算：
-  auto expression = new ASTBinaryExpression('+', dynamic_cast<ASTExpression*>(integer), dynamic_cast<ASTExpression*>(integer2));
+  auto expression =
+      new ASTBinaryExpression('+', dynamic_cast<ASTExpression*>(integer),
+                              dynamic_cast<ASTExpression*>(integer2));
 
   // 造了一个左值变量
   auto lhs = new ASTVariableExpression("lhs");
 
   // 将它定义出来，值为上述的加法表达式
-  auto defexp = new ASTVariableDefine(TYPE_INT, lhs, dynamic_cast<ASTExpression*>(expression));
+  auto defexp = new ASTVariableDefine(TYPE_INT, lhs,
+                                      dynamic_cast<ASTExpression*>(expression));
 
-  // 把这个变量放进上述的codeblock, 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
-  if( auto ptr = dynamic_cast<ASTNode*>(defexp) ) {
+  // 把这个变量放进上述的codeblock,
+  // 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp)) {
     entry->append_code(ptr);
   }
 
   funcimp->debug();
-}
 
+  // 下面我们来尝试生成
+  auto astcontext = new ASTContext();
+
+  auto code_integer = integer->generate(astcontext);
+  funcimp->generate(astcontext);
+
+  std::cout << "\n\n\n\n\n\n" << std::endl;
+  astcontext->current_m->print(llvm::errs(), nullptr);
+}
 
 int main(int argc, char** argv) {
   test_ast();
