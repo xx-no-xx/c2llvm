@@ -20,7 +20,6 @@
 ## 项目部署：
 > version: llvm-13.0.0
 
-__使用make clean && make 来部署项目本身，否则有时候会炸__
 
 - LLVM的安装：
 - 下载：https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0
@@ -55,6 +54,8 @@ echo "llvm path ok"
 ```
 make
 ```
+
+__使用make clean && make 来部署项目本身，否则有时候会炸__
 运行compiler，目前会运行正常yyparse, 还没有接入代码生成的部分。
 
 
