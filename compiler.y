@@ -8,7 +8,7 @@
 
 	void pass(); // pass : 啥也不干
 
-	ASTBasicBlock* entryBB = nullptr; // entry的"基本块"
+	ASTCodeBlockExpression* entryBB = nullptr; // entry的"基本块"
 
 	void yyerror(const char* s) { // 用来报错
 		printf("ERROR-IN-YACC: %s\n", s);
@@ -27,12 +27,12 @@
 
 // 扩展的yylval， yylval会在lex和yacc中传递
 %union{ 
-	ASTBasicBlock* BB;
+	ASTCodeBlockExpression* BB;
 	ASTFunctionProto* function_proto; // 函数声明
 	ASTFunctionImp* function_imp; // 函数实现
 	ASTExpression* expression; // 表达式
-	ASTStatement* statement; // 声明
-	ASTVariableProto* variable_proto; // 
+	ASTPrototype* statement; // 声明
+	ASTVariableDefine* variable_define; // 变量的定义，形如int x = 1;
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
   std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int 
@@ -60,7 +60,7 @@
 %%
 
 
-entry: areas {entryBB = $1; } // 把语法分析树中entry的指针交给entryBB, 因为yacc是从底向上的，这里会被最后访问。此时，basicblock已经搭建好，于是把它交给entryBB，供后续的代码生成。
+entry: areas {entryBB = $1; } // 把语法分析树中entry的指针交给entryBB, 因为yacc是从底向上的，这里会被最后访问。此时，codeblock已经搭建好，于是把它交给entryBB，供后续的代码生成。
 
 areas: area // 将程序划分为若干个区域
 | areas area

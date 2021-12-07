@@ -7,10 +7,51 @@ using namespace std;
 
 extern int yyparse();  // yacc & lex 以分析现有的文件
 // extern entry* entry;
-// extern ASTBasicBlock* entry;
+// extern ASTCodeBlockExpression* entry;
+
+void test_ast() {
+  // 造一个空的函数参数列表
+  std::vector<std::pair<ARGdefine, ARGname>> args;
+  args.clear();
+
+  // 造一个函数原型
+  auto funcproto = new ASTFunctionProto(TYPE_VOID, "foo_function", args);
+
+  // 造一个函数的入口代码块
+  auto entry = new ASTCodeBlockExpression();
+
+  // 造一个真正的函数实现
+  auto funcimp = new ASTFunctionImp(funcproto, entry);
+
+  // 造了一个左值变量的原型
+
+ // 如果碰到了一个纯粹的数字:
+  int value = 100;
+  auto integer = new ASTInteger(value);
+  // 和另一个纯的数字:
+
+  int value2 = 200;
+  auto integer2 = new ASTInteger(value2);
+  // 现在造一个200 + 100的二元运算：
+  auto expression = new ASTBinaryExpression('+', dynamic_cast<ASTExpression*>(integer), dynamic_cast<ASTExpression*>(integer2));
+
+  // 如果碰到了一个左值变量
+  auto lhs = new ASTVariableExpression("lhs");
+
+  // 将它定义为上述的加法
+  auto defexp = new ASTVariableDefine(TYPE_INT, lhs, dynamic_cast<ASTExpression*>(expression));
+
+  // 把这个变量放进上述的codeblock
+  if( auto ptr = dynamic_cast<ASTNode*>(defexp) ) {
+    entry->append_code(ptr);
+  }
+
+}
+
 
 int main(int argc, char** argv) {
-  yyparse();
+  test_ast();
+  //  yyparse();
   // 调用yacc&lex以解析输入文件。
   // 同时，AST也在.y的过程中构建起来。
   // 在这一步，entry是一个超级基本块, 它对应着AST的根结点
@@ -18,7 +59,7 @@ int main(int argc, char** argv) {
   // TODO： 生成代码
   //  ASTContext* context = new ASTContext();  // 创造一个ASTContext,
   //  它代表着我们的AST里的上下文 llvm::Value* code = entry->generate(context);
-  //  // 生成代码
+  //  生成代码
 
   return 0;
 }

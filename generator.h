@@ -19,7 +19,7 @@ class ASTContext {
     支持表达式
     llvm::Module* current_m;
     llvm::Function* cuurent_f;
-    std::vector<ASTBasicBLock*> BBstack;
+    std::vector<ASTCodeBlockExpression*> CodeBlockstack;
   */
 };
 
