@@ -35,7 +35,7 @@ class ASTStatement : public ASTNode {
  public:
   ASTStatement() {}
   virtual llvm::Value* generate(ASTContext& context) override {}
-  std::string get_type_name() { return "ASTStatement"; }
+  virtual std::string get_class_name() { return "ASTStatement"; }
 };
 
 class ASTExpression : public ASTNode {
@@ -43,7 +43,7 @@ class ASTExpression : public ASTNode {
  public:
   ASTExpression() {}
   virtual llvm::Value* generate(ASTContext& context) override {}
-  std::string get_type_name() { return "ASTExpression"; }
+  virtual std::string get_class_name() { return "ASTExpression"; }
 };
 
 
@@ -52,7 +52,7 @@ class ASTGeneralStatement : public ASTStatement {
  public:
   ASTGeneralStatement() {}
   llvm::Value* generate(ASTContext& context) override {}
-  std::string get_type_name()  { return "ASTGeneralStatement"; }
+  std::string get_class_name()  { return "ASTGeneralStatement"; }
 };
 
 class ASTGeneralExpression : public ASTExpression {
@@ -60,7 +60,7 @@ class ASTGeneralExpression : public ASTExpression {
  public:
   ASTGeneralExpression() {}
   llvm::Value* generate(ASTContext& context) override {}
-  std::string get_type_name()  { return "ASTGeneralExpression"; }
+  std::string get_class_name()  { return "ASTGeneralExpression"; }
 };
 
 class ASTBasicBlock : public ASTExpression {

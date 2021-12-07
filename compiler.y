@@ -30,8 +30,8 @@
 	ASTBasicBlock* BB;
 	ASTFunctionDec* function_dec; // 函数声明
 	ASTFunctionImp* function_imp; // 函数实现
-	ASTGeneralExpression* expression; // 表达式
-	ASTGeneralStatement* statement; // 声明
+	ASTExpression* expression; // 表达式
+	ASTStatement* statement; // 声明
 	ASTVariableDec* variable_dec; // 
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
@@ -70,7 +70,12 @@ area: function_implementation {pass();/* dosomething */}
 // | global_variable SEMICOLON {/* dosomething */}
 
 function_implementation : test_expression {pass(); /* dosomethign */ }
-function_declaration : test_expression_another { pass();  /* dosomething */ }
+function_declaration : test_expression_another { 
+	pass();  
+	$1 = new ASTGeneralExpression();
+	std::cout << "TEST:" << $1->get_class_name() << std::endl;
+	/* dosomething */ 
+}
 // TODO: 全局变量声明 global_variable : { /* dosomething */ }
 
 // TODO: 测试用
