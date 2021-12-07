@@ -23,7 +23,6 @@ void test_ast() {
   // 造一个真正的函数实现
   auto funcimp = new ASTFunctionImp(funcproto, entry);
 
-  // 造了一个左值变量的原型
 
  // 如果碰到了一个纯粹的数字:
   int value = 100;
@@ -35,13 +34,13 @@ void test_ast() {
   // 现在造一个200 + 100的二元运算：
   auto expression = new ASTBinaryExpression('+', dynamic_cast<ASTExpression*>(integer), dynamic_cast<ASTExpression*>(integer2));
 
-  // 如果碰到了一个左值变量
+  // 造了一个左值变量
   auto lhs = new ASTVariableExpression("lhs");
 
-  // 将它定义为上述的加法
+  // 将它定义出来，值为上述的加法表达式
   auto defexp = new ASTVariableDefine(TYPE_INT, lhs, dynamic_cast<ASTExpression*>(expression));
 
-  // 把这个变量放进上述的codeblock
+  // 把这个变量放进上述的codeblock, 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
   if( auto ptr = dynamic_cast<ASTNode*>(defexp) ) {
     entry->append_code(ptr);
   }
