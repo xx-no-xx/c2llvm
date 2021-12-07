@@ -9,7 +9,7 @@
 
 class ASTContext;
 
-class ASTFunctionDec;
+class ASTFunctionProto;
 class ASTFunctionImp;
 
 class ASTExpression;
@@ -82,7 +82,7 @@ class ASTIdentifier : public ASTExpression {
   llvm::Value* generate(ASTContext& context) override {}
 };
 
-class ASTVariableDec : public ASTStatement {
+class ASTVariableProto : public ASTStatement {
   // 给定了一个形如type left = right的变量声明
  private:
   int type;  // 参数类型
@@ -93,23 +93,23 @@ class ASTVariableDec : public ASTStatement {
   llvm::Value* generate(ASTContext& context) override {}
 };
 
-typedef ASTVariableDec ARGdec;  // 参数声明
+typedef ASTVariableProto ARGproto;  // 参数声明
 typedef std::string ARGname;    // 参数名称
-class ASTFunctionDec : public ASTStatement {
+class ASTFunctionProto : public ASTStatement {
   // 声明了一个形如ret_type name(args)的函数
  private:
   std::string name;
   int ret_type;
-  std::vector<std::tuple<ARGdec, ARGname>> args;
+  std::vector<std::tuple<ARGproto, ARGname>> args;
 
  public:
   llvm::Value* generate(ASTContext& context) override {}
 };
 
 class ASTFunctionImp : public ASTExpression {
-  // 实现了一个函数，它的声明是declaration, 函数的入口是function_entry;
+  // 实现了一个函数，它的声明是prototype, 函数的入口是function_entry;
  private:
-  ASTFunctionDec* declaration;
+  ASTFunctionProto* prototype;
   ASTBasicBlock* function_entry;
 
  public:

@@ -28,11 +28,11 @@
 // 扩展的yylval， yylval会在lex和yacc中传递
 %union{ 
 	ASTBasicBlock* BB;
-	ASTFunctionDec* function_dec; // 函数声明
+	ASTFunctionProto* function_proto; // 函数声明
 	ASTFunctionImp* function_imp; // 函数实现
 	ASTExpression* expression; // 表达式
 	ASTStatement* statement; // 声明
-	ASTVariableDec* variable_dec; // 
+	ASTVariableProto* variable_proto; // 
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
   std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int 
@@ -46,7 +46,7 @@
 
 // 非终结符
 %type <BB> entry areas area
-%type <function_dec> function_declaration // 函数声明
+%type <function_proto> function_prototype // 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <expression> test_expression test_expression_another// 用于测试的表达式
 // 表示这些非终结符，应该从哪里获取yylval
@@ -66,11 +66,11 @@ areas: area // 将程序划分为若干个区域
 | areas area
 
 area: function_implementation {pass();/* dosomething */}
-| function_declaration {pass();/* dosomething */}
+| function_prototype {pass();/* dosomething */}
 // | global_variable SEMICOLON {/* dosomething */}
 
 function_implementation : test_expression {pass(); /* dosomethign */ }
-function_declaration : test_expression_another { 
+function_prototype : test_expression_another { 
 	pass();  
 	$1 = new ASTGeneralExpression();
 	std::cout << "TEST:" << $1->get_class_name() << std::endl;
