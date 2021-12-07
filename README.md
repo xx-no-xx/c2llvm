@@ -28,8 +28,9 @@ $ mkdir build && cd build
 $ cmake -G "Unix Makefiles" -DLLVM_ENABLE_PROJECTS="clang" \
     -DCMAKE_BUILD_TYPE=Debug -DLLVM_TARGETS_TO_BUILD="X86" \
     -DBUILD_SHARED_LIBS=On ../llvm
-$ make
+$ make -j7
 ```
+make -j7的7可以改成其他数字，加速
 - 需要设置环境变量
   - 一个脚本（第一个冒号前可能就够了，为避免问题全部加上）
 ``` 
@@ -39,12 +40,13 @@ echo $PATH
 echo "llvm path ok"
 ```
 - 需要设置动态库
-  - 添加动态库： https://blog.csdn.net/smilejiasmile/article/details/84307526
+  - ~~添加动态库： https://blog.csdn.net/smilejiasmile/article/details/84307526~~
+  - 编辑/etc/ld.so.conf文件，在新的一行中加入库文件所在目录；
+  - 运行ldconfig，以更新/etc/ld.so.cache文件；
   - 添加xxxxx/llvm-project-13.0.0.src/build/lib
+  - 具体参考：https://blog.csdn.net/david_xtd/article/details/7625626
 
-```
-g++ `llvm-config --cxxflags` main.cpp y.tab.cpp lex.yy.cpp
-```
+
 
 ## 项目使用
 ```
@@ -59,6 +61,10 @@ make
 ---
 ---
 ###  过时的
+
+```
+g++ `llvm-config --cxxflags` main.cpp y.tab.cpp lex.yy.cpp
+```
 
 已有的代码的使用方式：
 ```
