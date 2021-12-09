@@ -155,9 +155,8 @@ class ASTVariableDefine : public ASTPrototype {
  private:
   int type;  // 参数类型
   ASTVariableExpression* lhs;
-  ASTExpression* rhs;
+  ASTExpression* rhs; // rhs不存在的情况，令rus=nullptr
 
-  bool default_rhs = false;  // TODO:rhs不存在的情况
 
  public:
   ASTVariableDefine(int _type, ASTVariableExpression* _lhs, ASTExpression* _rhs)

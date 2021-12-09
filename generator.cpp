@@ -123,7 +123,6 @@ llvm::Value* ASTVariableAssign::generate(ASTContext* astcontext) {
 
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
   auto inst = astcontext->create_local_var(type, this->lhs->get_name());
-  // TODO: 数组情况
   if (this->rhs != nullptr) {
     astcontext->builder->CreateStore(this->rhs->generate(astcontext), inst);
   }
