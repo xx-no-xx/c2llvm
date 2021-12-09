@@ -228,7 +228,7 @@ class ASTInteger : public ASTExpression {
 class ASTBinaryExpression : public ASTExpression {
   // 所有二元运算的类，例如1+1, 2+2, 3+a, a+b
  private:
-  char operation;
+  char operation;  // +, -, *, /
   ASTExpression* lhs;
   ASTExpression* rhs;
 

@@ -183,8 +183,22 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   if (!l_code | !r_code) return nullptr;
 
   if (this->operation == '+') {
-    return astcontext->builder->CreateAdd(
-        l_code, r_code, "foo_add");  // 创造l_code + r_code 的 add
+    auto inst = astcontext->builder->CreateAdd(
+        l_code, r_code);  // 创造l_code + r_code 的 add
+    return inst;
+  } else if (this->operation == '-') {
+    auto inst = astcontext->builder->CreateSub(
+        l_code, r_code);  // 创造l_code + r_code 的 add
+    return inst;
+  } else if (this->operation == '*') {
+    auto inst = astcontext->builder->CreateMul(
+        l_code, r_code);  // 创造l_code + r_code 的 add
+    return inst;
+  } else if (this->operation == '/') {
+    // TODO: 默认sdiv, 应该是有符号除法
+    auto inst = astcontext->builder->CreateSDiv(
+        l_code, r_code);  // 创造l_code + r_code 的 add
+    return inst;
   }
   // TODO 其他运算情况
   return nullptr;

@@ -43,36 +43,38 @@ void test_ast() {
   // 将它定义出来，值为上述的加法表达式
   auto defexp = new ASTVariableDefine(TYPE_INT, lhs,
                                       dynamic_cast<ASTExpression*>(expression));
-  
+
   auto fun = new ASTVariableExpression("fun");
 
   auto bun = new ASTVariableExpression("bun");
 
-  auto defexp2 = new ASTVariableDefine(TYPE_INT, fun, dynamic_cast<ASTExpression*>(lhs));
+  auto defexp2 =
+      new ASTVariableDefine(TYPE_INT, fun, dynamic_cast<ASTExpression*>(lhs));
 
-  auto defexp3 = new ASTVariableDefine(TYPE_INT, bun, dynamic_cast<ASTExpression*>(lhs));
-                                    
+  auto defexp3 =
+      new ASTVariableDefine(TYPE_INT, bun, dynamic_cast<ASTExpression*>(lhs));
+
   // 把这个变量放进上述的codeblock,
   // 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp)) { // int lhs = 100 + 300;
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp)) {  // int lhs = 100 + 300;
     entry->append_code(ptr);
   }
 
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp2)) { // int fun = lhs;
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp2)) {  // int fun = lhs;
     entry->append_code(ptr);
   }
 
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp3)) { // int bun = lhs;
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp3)) {  // int bun = lhs;
     entry->append_code(ptr);
   }
 
-  auto assignexp = new ASTVariableAssign(fun, bun); 
+  auto divexp = new ASTBinaryExpression('/', fun, bun);
 
-  if (auto ptr = dynamic_cast<ASTNode*>(assignexp)) { // fun = bun;
+  auto assignexp = new ASTVariableAssign(fun, divexp);
+
+  if (auto ptr = dynamic_cast<ASTNode*>(assignexp)) {  // fun = bun;
     entry->append_code(ptr);
   }
-
-
 
   funcimp->debug();
 
