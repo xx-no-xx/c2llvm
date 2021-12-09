@@ -15,7 +15,8 @@ llvm::Value* ASTContext::get_var(std::string var_name) {
     std::cout << "panic: empty code stack when getting" << std::endl;
     return nullptr;
   }
-  return codestack.top()->get_symbol(var_name);
+  auto symbol = codestack.top()->get_symbol(var_name);
+  return symbol;
 }
 
 llvm::Value* ASTContext::create_local_var(int type, std::string var_name) {
@@ -103,20 +104,29 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
 
 // 返回一个变量的值。它只能被作为表达式的右值。
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
-  auto var = astcontext->codestack.top()->get_symbol(this->get_name()); // 获取符号表
-  auto var_load_name = var->getName() + llvm::Twine("_load"); // 取名为xxx_load
-  auto var_load = astcontext->builder->CreateLoad(var, var_load_name); // 将它load为右值 xxx_load = load xxx
+  auto var =
+      astcontext->codestack.top()->get_symbol(this->get_name());  // 获取符号表
+  auto var_load_name = var->getName() + llvm::Twine("_load");  // 取名为xxx_load
+  auto var_load = astcontext->builder->CreateLoad(
+      var->getType()->getPointerElementType(), var,
+      var_load_name);  // 将它load为右值 xxx_load = load xxx
   return var_load;
+}
+
+// A = B的赋值语句IR生成
+llvm::Value* ASTVariableAssign::generate(ASTContext* astcontext) {
+  auto var = astcontext->get_var(this->lhs->get_name());
+  auto assign =
+      astcontext->builder->CreateStore(this->rhs->generate(astcontext), var);
+  return assign;
 }
 
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
   auto inst = astcontext->create_local_var(type, this->lhs->get_name());
-
   // TODO: 数组情况
   if (this->rhs != nullptr) {
     astcontext->builder->CreateStore(this->rhs->generate(astcontext), inst);
   }
-  // TODO: 这个地方应该拆掉变量赋值去VariableAssign
   return inst;
 }
 

@@ -18,6 +18,7 @@ class ASTExpression;
 class ASTGeneralExpression;
 
 class ASTVariableExpression;
+class ASTVariableAssign;
 
 class ASTCodeBlockExpression;
 class ASTFunctionProto;
@@ -129,6 +130,24 @@ class ASTVariableExpression : public ASTExpression {
   std::string get_name(void) { return name; }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
   void debug(void) override { std::cout << "var:" << name << " "; }
+};
+
+class ASTVariableAssign : public ASTExpression {
+ private:
+  ASTVariableExpression* lhs;
+  ASTExpression* rhs;
+
+ public:
+  ASTVariableAssign(ASTVariableExpression* _lhs, ASTExpression* _rhs)
+      : lhs(_lhs), rhs(_rhs) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTVariableAssign"; }
+  void debug(void) override {
+    lhs->debug();
+    std::cout << " [ASSIGN]="
+              << " ";
+    rhs->debug();
+  }
 };
 
 class ASTVariableDefine : public ASTPrototype {

@@ -49,6 +49,8 @@ void test_ast() {
   auto bun = new ASTVariableExpression("bun");
 
   auto defexp2 = new ASTVariableDefine(TYPE_INT, fun, dynamic_cast<ASTExpression*>(lhs));
+
+  auto defexp3 = new ASTVariableDefine(TYPE_INT, bun, dynamic_cast<ASTExpression*>(lhs));
                                     
   // 把这个变量放进上述的codeblock,
   // 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
@@ -60,9 +62,17 @@ void test_ast() {
     entry->append_code(ptr);
   }
 
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp2)) { // int bun = lhs;
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp3)) { // int bun = lhs;
     entry->append_code(ptr);
   }
+
+  auto assignexp = new ASTVariableAssign(fun, bun); 
+
+  if (auto ptr = dynamic_cast<ASTNode*>(assignexp)) { // fun = bun;
+    entry->append_code(ptr);
+  }
+
+
 
   funcimp->debug();
 
