@@ -43,17 +43,30 @@ void test_ast() {
   // 将它定义出来，值为上述的加法表达式
   auto defexp = new ASTVariableDefine(TYPE_INT, lhs,
                                       dynamic_cast<ASTExpression*>(expression));
+  
+  auto fun = new ASTVariableExpression("fun");
 
+  auto bun = new ASTVariableExpression("bun");
+
+  auto defexp2 = new ASTVariableDefine(TYPE_INT, fun, dynamic_cast<ASTExpression*>(lhs));
+                                    
   // 把这个变量放进上述的codeblock,
   // 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp)) {
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp)) { // int lhs = 100 + 300;
     entry->append_code(ptr);
   }
 
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp2)) { // int fun = lhs;
+    entry->append_code(ptr);
+  }
+
+  if (auto ptr = dynamic_cast<ASTNode*>(defexp2)) { // int bun = lhs;
+    entry->append_code(ptr);
+  }
 
   funcimp->debug();
 
-  // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用 
+  // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
@@ -62,10 +75,10 @@ void test_ast() {
 
   // 下面我们来尝试生成
   auto astcontext = new ASTContext();
-  funcimp->generate(astcontext); // 生成这个函数的IR
+  funcimp->generate(astcontext);  // 生成这个函数的IR
 
   std::cout << "\n\n\n\n\n\n" << std::endl;
-  astcontext->current_m->print(llvm::errs(), nullptr); // 输出测试
+  astcontext->current_m->print(llvm::errs(), nullptr);  // 输出测试
 }
 
 int main(int argc, char** argv) {

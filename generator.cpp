@@ -4,8 +4,6 @@
 
 /* ------------------ ASTContext 方法的实现 ---------------- */
 
-void ASTContext::clear_symboltable(void) { this->symboltable.clear(); }
-
 // TODO: 载入参数
 // # void ASTContext::load_argument(ASTFunctionImp* function) {
 // # //  for(auto &arg: function->prototype->args) {
@@ -13,20 +11,23 @@ void ASTContext::clear_symboltable(void) { this->symboltable.clear(); }
 // # }
 
 llvm::Value* ASTContext::get_var(std::string var_name) {
-  if (this->symboltable.count(var_name) == 1) {
-    return symboltable[var_name];
+  if (codestack.empty()) {
+    std::cout << "panic: empty code stack when getting" << std::endl;
+    return nullptr;
   }
-  return nullptr;
+  return codestack.top()->get_symbol(var_name);
 }
 
 llvm::Value* ASTContext::create_local_var(int type, std::string var_name) {
-  if (this->symboltable.count(var_name) == 0) {
-    symboltable[var_name] = this->builder->CreateAlloca(
-        this->get_type(type), nullptr,
-        var_name);  // 创造单个变量，所以ArraySize = nullptr
-    return symboltable[var_name];
+  if (codestack.empty()) {
+    std::cout << "panic: empty code stack when creating" << std::endl;
+    return nullptr;
   }
-  return nullptr;
+  auto var =
+      builder->CreateAlloca(this->get_type(type), nullptr,
+                            var_name);  // 创造单个变量，所以ArraySize = nullptr
+  codestack.top()->add_symbol(var_name, var);
+  return var;
 }
 
 llvm::Type* ASTContext::get_type(int type) {
@@ -100,24 +101,22 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
                                 this->value, true);  // true代表有符合整数
 }
 
+// 返回一个变量的值。它只能被作为表达式的右值。
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
-  // TODO
-  return nullptr;
+  auto var = astcontext->codestack.top()->get_symbol(this->get_name()); // 获取符号表
+  auto var_load_name = var->getName() + llvm::Twine("_load"); // 取名为xxx_load
+  auto var_load = astcontext->builder->CreateLoad(var, var_load_name); // 将它load为右值 xxx_load = load xxx
+  return var_load;
 }
 
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
-  auto inst = astcontext->builder->CreateAlloca(
-      astcontext->get_type(this->type), nullptr, "foo_var");
-  // TODO: change name, virtual function
-
-  // TODO:操作符号表
+  auto inst = astcontext->create_local_var(type, this->lhs->get_name());
 
   // TODO: 数组情况
-
   if (this->rhs != nullptr) {
     astcontext->builder->CreateStore(this->rhs->generate(astcontext), inst);
   }
-  // TODO: 这个地方应该拆掉变量赋值去
+  // TODO: 这个地方应该拆掉变量赋值去VariableAssign
   return inst;
 }
 
@@ -131,7 +130,6 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
       llvm::Function::Create(functype, llvm::Function::ExternalLinkage,
                              this->get_name(), astcontext->current_m);
   // TODO: 函数参数
-
   astcontext->current_f = func;  // 把当前函数更新到上下文
 
   return func;
@@ -150,20 +148,21 @@ llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
     return nullptr;
   }
 
-  auto BB = llvm::BasicBlock::Create(*(astcontext->context), "entry",
-                                     func);  // 创建这个函数的entry基本块
-  astcontext->builder->SetInsertPoint(BB);  // 设置IRbuilder到这个基本块上
+  auto entryBB = llvm::BasicBlock::Create(
+      *(astcontext->context), "entry__" + this->prototype->get_name(),
+      func);  // 创建这个函数的entry基本块
+  astcontext->builder->SetInsertPoint(entryBB);  // 设置IRbuilder到这个基本块上
 
-  astcontext->clear_symboltable();  // 清楚上一个函数的符号表
+  // TODO: 符号表
   // TODO: astcontext->load_argument(); // 载入函数的参数
 
-  if (llvm::Value* retcode = function_entry->generate(astcontext)) {
-    astcontext->builder->CreateRet(retcode);
-    // TODO: 我不知道这个retval在做什么
-
-    // TODO: 验证我们的函数
-    return func;
+  if (llvm::Value* retcode = this->function_entry->generate(astcontext)) {
+    //    astcontext->builder->CreateRet(retcode);
+    // TODO: retcode
+    std::cout << "Function Generated!" << std::endl;
+    //    return func;
   }
+  astcontext->builder->CreateRet(0);  // return void
   return nullptr;
 }
 
@@ -174,7 +173,8 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   if (!l_code | !r_code) return nullptr;
 
   if (this->operation == '+') {
-    return astcontext->builder->CreateAdd(l_code, r_code, "foo_add");
+    return astcontext->builder->CreateAdd(
+        l_code, r_code, "foo_add");  // 创造l_code + r_code 的 add
   }
   // TODO 其他运算情况
   return nullptr;

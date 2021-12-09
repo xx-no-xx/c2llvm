@@ -5,6 +5,7 @@
 #include <llvm/IR/Value.h>
 
 #include <iostream>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -87,14 +88,23 @@ class ASTGeneralExpression : public ASTExpression {
 class ASTCodeBlockExpression : public ASTExpression {
   // 该类对应着一序列的代码块，及一些AST的序列
   std::vector<ASTNode*> codes;
+  std::map<std::string, llvm::Value*> symboltable;  // 符号表
 
  public:
-  ASTCodeBlockExpression() { codes.clear(); }
+  ASTCodeBlockExpression() {
+    codes.clear();
+    symboltable.clear();
+  }
   llvm::BasicBlock* BB;  // ! I have NO IDEA about what this BB is doing here
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name() override { return "ASTCodeBlockExpression"; }
   void set_function(ASTFunctionImp*);  // 设置代码块对应着哪一个函数的开头
   void append_code(ASTNode*);  // 将新的AST结点接在已有代码的末尾
+  void clear_symbol(void);     // 清空符号表
+  bool add_symbol(std::string,
+                  llvm::Value*);  // 将一个llvm中的symbol加入代码块的符号表。
+  //代码块对应的基本块集合共享这些变量。因此，这些变量在实际IR实现中要被放在最前面。
+  llvm::Value* get_symbol(std::string);  // 获取该名称的符号表
   void debug(void) override {
     std::cout << "this is " << get_class_name() << " with " << codes.size()
               << " codes in here" << std::endl;
@@ -116,6 +126,7 @@ class ASTVariableExpression : public ASTExpression {
  public:
   ASTVariableExpression(std::string _name) : name(_name) {}
   llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_name(void) { return name; }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
   void debug(void) override { std::cout << "var:" << name << " "; }
 };

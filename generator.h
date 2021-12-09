@@ -10,6 +10,7 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 
 #include <iostream>
 #include <stack>
@@ -34,7 +35,7 @@ class ASTContext {
     std::cout << "AST Context made" << std::endl;
   }
 
-  std::map<std::string, llvm::Value *> symboltable;  // 当前已经出现的变量
+  // std::map<std::string, llvm::Value *> symboltable;  // 符号表
 
   //  std::map<std::string, Value*> global_symboltable;
   // TODO: 支持全局变量/支持多函数
@@ -43,11 +44,15 @@ class ASTContext {
   //  void load_argument();
   // TODO: 载入函数的参数
 
-  llvm::Value *create_local_var(
-      int type, std::string);  // 创建一个局部变量。如果重名，返回nullptr;
-  llvm::Value *get_var(std::string);  // 获取一个变量。如果不存在，返回nullptr;
+  llvm::Value *create_local_var(int type, std::string);
+  // 创建一个局部变量。
+  // 如果重名，返回nullptr;
 
-  llvm::Type *get_type(int type);  // 通过我们自定义的类型，返回llvm的type
+  llvm::Value *get_var(std::string);
+  // 获取一个变量。如果不存在，返回nullptr;
+
+  llvm::Type *get_type(int type);
+  // 通过我们自定义的类型，返回llvm的type
 
   // TODO: ERROR WARNING! 用于输出警告的错误函数
 };
