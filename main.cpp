@@ -4,6 +4,13 @@
 
 #include "ast.h"
 #include "generator.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
 
 using namespace std;
 
@@ -11,13 +18,13 @@ extern int yyparse();  // yacc & lex 以分析现有的文件
 // extern entry* entry;
 // extern ASTCodeBlockExpression* entry;
 
-void test_ast() {
+void test_ast(ASTContext* context) {
   // 造一个空的函数参数列表
   std::vector<std::pair<ARGdefine, ARGname>> args;
   args.clear();
 
   // 造一个函数原型
-  auto funcproto = new ASTFunctionProto(TYPE_VOID, "foo_function", args);
+  auto funcproto = new ASTFunctionProto(TYPE_VOID, "main", args);
 
   // 造一个函数的入口代码块
   auto entry = new ASTCodeBlockExpression();
@@ -78,32 +85,39 @@ void test_ast() {
 
   funcimp->debug();
 
+  funcimp->generate(context);  // 生成函数的代码
+
   // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
-
-  // 下面我们来尝试生成
-  auto astcontext = new ASTContext();
-  funcimp->generate(astcontext);  // 生成这个函数的IR
-
-  std::cout << "\n\n\n\n\n\n" << std::endl;
-  astcontext->current_m->print(llvm::errs(), nullptr);  // 输出测试
 }
 
 int main(int argc, char** argv) {
-  test_ast();
-  //  yyparse();
-  // 调用yacc&lex以解析输入文件。
-  // 同时，AST也在.y的过程中构建起来。
-  // 在这一步，entry是一个超级基本块, 它对应着AST的根结点
-
-  // TODO： 生成代码
-  //  ASTContext* context = new ASTContext();  // 创造一个ASTContext,
-  //  它代表着我们的AST里的上下文 llvm::Value* code = entry->generate(context);
-  //  生成代码
-
+  if (argc <= 1) {
+    std::cout << "panic: no argument" << std::endl;
+  }
+  if (strcmp(argv[1], "parse") == 0) {
+    yyparse();
+    // 调用yacc&lex以解析输入文件。
+    // 同时，AST也在.y的过程中构建起来。
+    // 在这一步，entry是一个超级基本块, 它对应着AST的根结点
+  } else if (strcmp(argv[1], "test") == 0) {
+    auto context = new ASTContext();
+    auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+    context->current_m->setTargetTriple(TargetTriple);  // 生成目标平台的信息
+    test_ast(context);  // 生成AST与对应代码
+    if (argc <= 2) {
+      context->current_m->print(llvm::errs(), nullptr);  // 输出测试
+    } else {
+      std::error_code EC;
+      llvm::raw_fd_ostream dest(argv[2], EC, llvm::sys::fs::OF_None);
+      context->current_m->print(dest, nullptr);
+    }
+  } else {
+    std::cout << "panic: invalid argument" << std::endl;
+  }
   return 0;
 }
