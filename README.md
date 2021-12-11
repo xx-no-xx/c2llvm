@@ -1,5 +1,7 @@
 # c2llvm
 
+__建议不要把lex和yacc输出的东西扔上来__
+
 ## 项目结构：
 - compiler.l
   - 词法分析
@@ -19,7 +21,6 @@
 
 ## 项目部署：
 > version: llvm-13.0.0
-
 
 - LLVM的安装：
 - 下载：https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0
@@ -56,13 +57,17 @@ make
 ```
 
 __使用make clean && make 来部署项目本身，否则有时候会炸__
-运行compiler，目前会运行正常yyparse, 还没有接入代码生成的部分。
+运行compiler，目前会运行`test_ast`。
 
+`test_ast()`函数用来模拟AST的生成与IR的生成
 
+`yyparse()`调用lex和yacc来解析输入，对应compiler.l和compiler.y。最后项目中，应该在这一步完成AST的构造。
 
 ## 语法逻辑
 
-yacc自底向上运行。
+yacc自底向上运行, 按照下列语法。
+
+语法不能有冲突，不能有两条路径通向同一个地方。
 
 ```
 entry（总体） -> areas
@@ -74,15 +79,18 @@ area -> 全局变量区域，函数原型区域（声明），函数定义区域
 区域 -> TODO
 ```
 
-继续向下推理。
+类似如此，继续向下推理。
 
-一般分为两类代码：声明类和实现类。
+
+## 代码生成
+
+总分类为两类代码：原型类和实现类，在ast.h中声明，有相应注释。
 
 - 在ast.h中，实现类的一个私有成员是原型类（prototype/proto/declare）。例如函数实现的一个成员变量是函数原型类。
 
-- 变量也类似，有变量原型类。
+- 变量也类似，有变量定义类，和变量表达式类。前者定义了一个变量，例如int i = 1;后者单独指i。
 
-> 现在的例子是推理出一个inti=1;或者inti=j;的
+`test_ast`给出了一个造AST的例子。yacc应该达到类似的效果。操作顺序不是问题，我可以另写api。
 
 ---
 ---

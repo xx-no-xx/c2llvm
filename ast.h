@@ -5,6 +5,8 @@
 #include <llvm/IR/Value.h>
 
 #include <iostream>
+#include <map>
+#include <utility>
 #include <vector>
 
 class ASTContext;
@@ -15,14 +17,27 @@ class ASTFunctionImp;
 class ASTExpression;
 class ASTGeneralExpression;
 
+class ASTVariableExpression;
+class ASTVariableAssign;
+
+class ASTCodeBlockExpression;
+class ASTFunctionProto;
+
+#define TYPE_VOID 0
+#define TYPE_INT 1
+
 class ASTNode {
   // 所有AST结点的基类
  public:
   ASTNode() {}
-  virtual llvm::Value* generate(ASTContext& context) {
+  virtual llvm::Value* generate(ASTContext* astcontext) {
     // 生成该AST结点对应的llvmIR代码
     return nullptr;
-  } 
+  }
+  virtual std::string get_class_name() { return "ASTNode"; }
+  virtual void debug() {
+    std::cout << "this is " << get_class_name() << std::endl;
+  }
   /*
   TODO:
     json化AST
@@ -30,48 +45,79 @@ class ASTNode {
   */
 };
 
-class ASTStatement : public ASTNode {
-  // 所有AST声明的基类
+class ASTPrototype : public ASTNode {
+  // 所有AST原型或者声明的基类
+  // 表达式不能作为左值
  public:
-  ASTStatement() {}
-  virtual llvm::Value* generate(ASTContext& context) override {}
-  virtual std::string get_class_name() { return "ASTStatement"; }
+  ASTPrototype() {}
+  virtual llvm::Value* generate(ASTContext* astcontext) override;
+  virtual std::string get_class_name() override { return "ASTPrototype"; }
+  virtual void debug() override {
+    std::cout << "this is " << get_class_name() << " " << std::endl;
+  }
 };
 
 class ASTExpression : public ASTNode {
   // 所有AST表达式的基类
  public:
   ASTExpression() {}
-  virtual llvm::Value* generate(ASTContext& context) override {}
-  virtual std::string get_class_name() { return "ASTExpression"; }
+  virtual llvm::Value* generate(ASTContext* astcontext) override;
+  virtual std::string get_class_name() override { return "ASTExpression"; }
+  virtual void debug() override {
+    std::cout << "this is " << get_class_name() << " " << std::endl;
+  }
 };
 
-
-class ASTGeneralStatement : public ASTStatement {
-  // 常规的声明
+class ASTGeneralPrototype : public ASTPrototype {
+  // TODO: 没有用，预留
  public:
-  ASTGeneralStatement() {}
-  llvm::Value* generate(ASTContext& context) override {}
-  std::string get_class_name()  { return "ASTGeneralStatement"; }
+  ASTGeneralPrototype() {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name() override { return "ASTGeneralPrototype"; }
+  void debug() override {}
 };
 
 class ASTGeneralExpression : public ASTExpression {
-  // 常规的表达式
+  // TODO: 没有用，预留
  public:
   ASTGeneralExpression() {}
-  llvm::Value* generate(ASTContext& context) override {}
-  std::string get_class_name()  { return "ASTGeneralExpression"; }
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name() override { return "ASTGeneralExpression"; }
+  void debug() override {}
 };
 
-class ASTBasicBlock : public ASTExpression {
-  // 基本块: 区分于LLVM的BasicBlock类
+class ASTCodeBlockExpression : public ASTExpression {
+  // 该类对应着一序列的代码块，及一些AST的序列
+  std::vector<ASTNode*> codes;
+  std::map<std::string, llvm::Value*> symboltable;  // 符号表
+
  public:
-  llvm::BasicBlock* BB;
-  llvm::Value* generate(ASTContext& context) override {}
+  ASTCodeBlockExpression() {
+    codes.clear();
+    symboltable.clear();
+  }
+  llvm::BasicBlock* BB;  // ! I have NO IDEA about what this BB is doing here
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name() override { return "ASTCodeBlockExpression"; }
+  void set_function(ASTFunctionImp*);  // 设置代码块对应着哪一个函数的开头
+  void append_code(ASTNode*);  // 将新的AST结点接在已有代码的末尾
+  void clear_symbol(void);     // 清空符号表
+  bool add_symbol(std::string,
+                  llvm::Value*);  // 将一个llvm中的symbol加入代码块的符号表。
+  //代码块对应的基本块集合共享这些变量。因此，这些变量在实际IR实现中要被放在最前面。
+  llvm::Value* get_symbol(std::string);  // 获取该名称的符号表
+  void debug(void) override {
+    std::cout << "this is " << get_class_name() << " with " << codes.size()
+              << " codes in here" << std::endl;
+    for (auto& code : codes) {
+      code->debug();
+      puts("");
+    }
+  }
 };
 
-class ASTIdentifier : public ASTExpression {
-  // 对应了一个表达式的左值, 一个identifier
+class ASTVariableExpression : public ASTExpression {
+  // 对应了一个表达式的左值, 一个变量，例如a
  private:
   std::string name;
   // TODO: 对于数组应该另外处理
@@ -79,41 +125,140 @@ class ASTIdentifier : public ASTExpression {
   int array_length;  // 数组的长度
 
  public:
-  llvm::Value* generate(ASTContext& context) override {}
+  ASTVariableExpression(std::string _name) : name(_name) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_name(void) { return name; }
+  std::string get_class_name(void) override { return "ASTVariableExpression"; }
+  void debug(void) override { std::cout << "var:" << name << " "; }
 };
 
-class ASTVariableProto : public ASTStatement {
-  // 给定了一个形如type left = right的变量声明
+class ASTVariableAssign : public ASTExpression {
+ private:
+  ASTVariableExpression* lhs;
+  ASTExpression* rhs;
+
+ public:
+  ASTVariableAssign(ASTVariableExpression* _lhs, ASTExpression* _rhs)
+      : lhs(_lhs), rhs(_rhs) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTVariableAssign"; }
+  void debug(void) override {
+    lhs->debug();
+    std::cout << " [ASSIGN]="
+              << " ";
+    rhs->debug();
+  }
+};
+
+class ASTVariableDefine : public ASTPrototype {
+  // 给定了一个形如type lhs = rhs的变量声明
  private:
   int type;  // 参数类型
-  ASTIdentifier left;
-  ASTGeneralExpression right;
+  ASTVariableExpression* lhs;
+  ASTExpression* rhs; // rhs不存在的情况，令rus=nullptr
+
 
  public:
-  llvm::Value* generate(ASTContext& context) override {}
+  ASTVariableDefine(int _type, ASTVariableExpression* _lhs, ASTExpression* _rhs)
+      : type(_type), lhs(_lhs), rhs(_rhs) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTVariableDefine"; }
+  void debug(void) override {
+    std::cout << "type:" << type << " ";
+    lhs->debug();
+    std::cout << " [ASSIGN FROM DEFINE]= ";
+    rhs->debug();
+  }
 };
 
-typedef ASTVariableProto ARGproto;  // 参数声明
-typedef std::string ARGname;    // 参数名称
-class ASTFunctionProto : public ASTStatement {
+typedef ASTVariableDefine ARGdefine;  // 参数声明
+typedef std::string ARGname;          // 参数名称
+class ASTFunctionProto : public ASTPrototype {
   // 声明了一个形如ret_type name(args)的函数
  private:
+  int ret_type;  // TODO: 现在默认不返回东西
   std::string name;
-  int ret_type;
-  std::vector<std::tuple<ARGproto, ARGname>> args;
+  std::vector<std::pair<ARGdefine, ARGname>> args;  // ! ARGname 必须不一样
 
  public:
-  llvm::Value* generate(ASTContext& context) override {}
+  ASTFunctionProto(int _ret_type, std::string _name,
+                   std::vector<std::pair<ARGdefine, ARGname>> _args)
+      : ret_type(_ret_type), name(_name), args(_args) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTFunctionProto"; }
+  std::string get_name(void) { return name; }
+  void debug(void) override {
+    // TODO: 展示参数
+    std::cout << "Function Prototype Name: " << name << std::endl;
+  }
 };
 
 class ASTFunctionImp : public ASTExpression {
   // 实现了一个函数，它的声明是prototype, 函数的入口是function_entry;
  private:
   ASTFunctionProto* prototype;
-  ASTBasicBlock* function_entry;
+  ASTCodeBlockExpression* function_entry;
 
  public:
-  llvm::Value* generate(ASTContext& context) override {}
+  ASTFunctionImp(ASTFunctionProto* _pro, ASTCodeBlockExpression* _entry)
+      : prototype(_pro), function_entry(_entry) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  void set_entry(ASTCodeBlockExpression*);
+  void debug(void) override {
+    prototype->debug();
+    function_entry->debug();
+  }
+  std::string get_class_name(void) override { return "ASTFunctionImp"; }
+};
+
+class ASTInteger : public ASTExpression {
+  // 所有整数的类，例如1, 2, 33000
+ private:
+  int value;
+
+ public:
+  ASTInteger(int _value) : value(_value) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  int get_value(void) { return value; }
+  std::string get_class_name(void) override { return "ASTInteger"; }
+  void debug(void) override { std::cout << "[INTEGER]" << value << " "; }
+};
+
+class ASTBinaryExpression : public ASTExpression {
+  // 所有二元运算的类，例如1+1, 2+2, 3+a, a+b
+ private:
+  char operation;  // +, -, *, /
+  ASTExpression* lhs;
+  ASTExpression* rhs;
+
+ public:
+  ASTBinaryExpression(char _operation, ASTExpression* _lhs, ASTExpression* _rhs)
+      : operation(_operation), lhs(_lhs), rhs(_rhs) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTBinaryExpression"; }
+  void debug(void) override {
+    lhs->debug();
+    std::cout << " [BinaryOperation]" << operation << " ";
+    rhs->debug();
+  }
+};
+
+class ASTCallExpression : public ASTExpression {
+  // 所有call其他函数的类
+ private:
+  typedef ASTExpression* CallArgument;
+  std::string callee;
+  std::vector<CallArgument> args;
+
+ public:
+  ASTCallExpression(const std::string& _callee, std::vector<CallArgument> _args)
+      : callee(_callee), args(_args) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return " ASTCallExpression"; }
+  void debug(void) override {
+    // TODO
+    return;
+  }
 };
 
 #endif
