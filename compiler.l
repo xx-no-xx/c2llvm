@@ -29,38 +29,38 @@ void save_value(std::string str);
 %}
 
 %%
-"+"         { save_type(TADD); return TADD;}
-"-"         { save_type(TSUB); return TSUB;}
-"*"         { save_type(TMUL); return TMUL;}
-"/"         { save_type(TDIV); return TDIV;}
-"%"         { save_type(TMOD); return TMOD;}
-"<<"        { save_type(TLSFT); return TLSFT;}
-">>"        { save_type(TRSFT); return TRSFT;}
-"|"         { save_type(TBIT_OR); return TBIT_OR;}
-"&"         { save_type(TBIT_AND); return TBIT_AND;}
-"^"         { save_type(TBIT_XOR); return TBIT_XOR;}
-"!"         { save_type(TBIT_NOT); return TBIT_NOT;}
+"+"         { save_type("TADD"); return TADD;}
+"-"         { save_type("TSUB"); return TSUB;}
+"*"         { save_type("TMUL"); return TMUL;}
+"/"         { save_type("TDIV"); return TDIV;}
+"%"         { save_type("TMOD"); return TMOD;}
+"<<"        { save_type("TLSFT"); return TLSFT;}
+">>"        { save_type("TRSFT"); return TRSFT;}
+"|"         { save_type("TBIT_OR"); return TBIT_OR;}
+"&"         { save_type("TBIT_AND"); return TBIT_AND;}
+"^"         { save_type("TBIT_XOR"); return TBIT_XOR;}
+"!"         { save_type("TBIT_NOT"); return TBIT_NOT;}
 
-"&&"        { save_type(TAND); return TAND;}
-"||"        { save_type(TOR); return TOR;}
+"&&"        { save_type("TAND"); return TAND;}
+"||"        { save_type("TOR"); return TOR;}
 "=" 		{ save_type("ASSIGN"); return ASSIGN; } // 赋值=号
-"=="        { save_type(TCEQ); return TCEQ;}
-"!="        { save_type(TCNE); return TCNE;}
-"<"         { save_type(TCLT); return TCLT;}
-"<="        { save_type(TCLE); return TCLE;}
-">"         { save_type(TCGT); return TCGT;}
-">="        { save_type(TCGE); return TCGE;}
+"=="        { save_type("TCEQ"); return TCEQ;}
+"!="        { save_type("TCNE"); return TCNE;}
+"<"         { save_type("TCLT"); return TCLT;}
+"<="        { save_type("TCLE"); return TCLE;}
+">"         { save_type("TCGT"); return TCGT;}
+">="        { save_type("TCGE"); return TCGE;}
 
-"("         { save_type(TLPAREN); return TLPAREN;}
-")"         { save_type(TRPAREN); return TRPAREN;}
-"["         { save_type(TLBRACKET); return TLBRACKET;}
-"]"         { save_type(TRBRACKET); return TRBRACKET;}
-"{"         { save_type(TLBRACE); return TLBRACE;}
-"}"         { save_type(TRBRACE); return TRBRACE;}
+"("         { save_type("TLPAREN"); return TLPAREN;}
+")"         { save_type("TRPAREN"); return TRPAREN;}
+"["         { save_type("TLBRACKET"); return TLBRACKET;}
+"]"         { save_type("TRBRACKET"); return TRBRACKET;}
+"{"         { save_type("TLBRACE"); return TLBRACE;}
+"}"         { save_type("TRBRACE"); return TRBRACE;}
 
-"\n"        { save_type(TCR); return TCR;}
-","         { save_type(TCOMMA); return TCOMMA;}
-"."         { save_type(TDOT); return TDOT;}
+"\n"        { save_type("TCR"); return TCR;}
+","         { save_type("TCOMMA"); return TCOMMA;}
+"."         { save_type("TDOT"); return TDOT;}
 ";" 		{ save_type("SEMICOLON"); return SEMICOLON; }  // 分号;
 
 "if"		{ save_type("IF"); return IF; }
@@ -79,7 +79,7 @@ void save_value(std::string str);
 {D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } // TODO: 修改为正确的正则表达式
 
 '(\\.|[^\\'])' {
-    // save_type(CHAR_LITERAL);
+    // save_type("CHAR_LITERAL");
     yylval.char_value = yytext;
     return CHAR_LITERAL;
 }	// 字符
