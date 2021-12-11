@@ -29,17 +29,75 @@ void save_value(std::string str);
 %}
 
 %%
+"+"         { save_type(TADD); return TADD;}
+"-"         { save_type(TSUB); return TSUB;}
+"*"         { save_type(TMUL); return TMUL;}
+"/"         { save_type(TDIV); return TDIV;}
+"%"         { save_type(TMOD); return TMOD;}
+"<<"        { save_type(TLSFT); return TLSFT;}
+">>"        { save_type(TRSFT); return TRSFT;}
+"|"         { save_type(TBIT_OR); return TBIT_OR;}
+"&"         { save_type(TBIT_AND); return TBIT_AND;}
+"^"         { save_type(TBIT_XOR); return TBIT_XOR;}
+"!"         { save_type(TBIT_NOT); return TBIT_NOT;}
 
-"int" { save_type("INT"); return INT; } // int标识符
+"&&"        { save_type(TAND); return TAND;}
+"||"        { save_type(TOR); return TOR;}
+"=" 		{ save_type("ASSIGN"); return ASSIGN; } // 赋值=号
+"=="        { save_type(TCEQ); return TCEQ;}
+"!="        { save_type(TCNE); return TCNE;}
+"<"         { save_type(TCLT); return TCLT;}
+"<="        { save_type(TCLE); return TCLE;}
+">"         { save_type(TCGT); return TCGT;}
+">="        { save_type(TCGE); return TCGE;}
 
-[0-9] { save_value("INT_CONSTANT"); return INT_CONSTANT; } // TODO: 修改为正确的正则表达式
+"("         { save_type(TLPAREN); return TLPAREN;}
+")"         { save_type(TRPAREN); return TRPAREN;}
+"["         { save_type(TLBRACKET); return TLBRACKET;}
+"]"         { save_type(TRBRACKET); return TRBRACKET;}
+"{"         { save_type(TLBRACE); return TLBRACE;}
+"}"         { save_type(TRBRACE); return TRBRACE;}
 
-"=" { save_type("ASSIGN"); return ASSIGN; } // 赋值=号
+"\n"        { save_type(TCR); return TCR;}
+","         { save_type(TCOMMA); return TCOMMA;}
+"."         { save_type(TDOT); return TDOT;}
+";" 		{ save_type("SEMICOLON"); return SEMICOLON; }  // 分号;
 
-";" { save_type("SEMICOLON"); return SEMICOLON; }  // 分号;
+"if"		{ save_type("IF"); return IF; }
+"else"		{ save_type("ELSE"); return ELSE; }
+"while"		{ save_type("WHILE"); return WHILE; }
+"break"		{ save_type("BREAK"); return BREAK; }
+"continue"	{ save_type("CONTINUE"); return CONTINUE; }
+"return"	{ save_type("RETURN"); return RETURN; }
 
-[a-z] { save_value("IDENTIFIER"); return IDENTIFIER; }
+"int" 		{ save_type("INT"); return INT; } // int标识符
+"char"		{ save_type("CHAR"); return CHAR; }
+"double"	{ save_type("DOUBLE"); return DOUBLE; }
+"void"		{ save_type("VOID"); return VOID; }
+"extern"    { save_type("EXTERN"); return EXTERN; }
 
+{D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } // TODO: 修改为正确的正则表达式
+
+'(\\.|[^\\'])' {
+    // save_type(CHAR_LITERAL);
+    yylval.char_value = yytext;
+    return CHAR_LITERAL;
+}	// 字符
+
+{L}({L}|{D})* { save_value("IDENTIFIER"); return IDENTIFIER; }
+
+([1-9][0-9]*)|0|([0-9]\.[0-9]*) {
+    double temp;
+    sscanf(yytext, "%lf", &temp);
+    yylval.double_value = temp;
+    return DOUBLE_LITERAL;
+} // double型
+
+[ \t\v\n\f]
+. {
+    fprintf(stderr, "lexical error.\n");
+    exit(1);
+}
 %%
 
 /*

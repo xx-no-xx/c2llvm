@@ -35,10 +35,13 @@
 	ASTVariableDefine* variable_define; // 变量的定义，形如int x = 1;
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
-  std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int 
+	char char_value;	// char型的实际值
+	double double_value;	// double型的实际值
+  	std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int 
 }
 
-%token <type> INT
+%token <type> INT CHAR DOUBLE
+%token <type> IF ELSE WHILE BREAK CONTINUE RETURN
 %token <type> ASSIGN SEMICOLON
 %token <int_value> INT_CONSTANT
 %token <str_value> IDENTIFIER
