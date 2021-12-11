@@ -52,12 +52,24 @@ echo "llvm path ok"
 
 
 ## 项目使用
+编译：
 ```
 make
 ```
 
 __使用make clean && make 来部署项目本身，否则有时候会炸__
-运行compiler，目前会运行`test_ast`。
+
+__运行compiler, 三种行为：__
+
+`./compiler parse`: 运行yacc和lex的原始逻辑，yyparse();
+
+`./compiler test`: 输出test_ast生成的IR到console
+
+`./compiler test any_file_name.ll`: 输出test_ast生成的IR到对应的文件
+
+补充：使用`clang file.ll -o file`生成可执行文件
+
+main函数说明：
 
 `test_ast()`函数用来模拟AST的生成与IR的生成
 
