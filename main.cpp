@@ -98,6 +98,7 @@ void test_ast(ASTContext* context) {
 int main(int argc, char** argv) {
   if (argc <= 1) {
     std::cout << "panic: no argument" << std::endl;
+    return 0;
   }
   if (strcmp(argv[1], "parse") == 0) {
     yyparse();
