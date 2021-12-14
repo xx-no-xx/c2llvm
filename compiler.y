@@ -8,7 +8,7 @@
 
 	void pass(); // pass : 啥也不干
 
-	ASTCodeBlockExpression* entryBB = nullptr; // entry的"基本块"
+	ASTCodeBlockExpression* entryCodeBlock = nullptr; // entry的"基本块"
 
 	void yyerror(const char* s) { // 用来报错
 		printf("ERROR-IN-YACC: %s\n", s);
@@ -37,7 +37,7 @@
 
 // 扩展的yylval， yylval会在lex和yacc中传递
 %union{ 
-	ASTCodeBlockExpression* BB;
+	ASTCodeBlockExpression* CodeBlock;
 	ASTFunctionProto* function_proto; // 函数声明
 	ASTFunctionImp* function_imp; // 函数实现
 	ASTExpression* expression; // 表达式
@@ -57,7 +57,7 @@
 %token <type> TAND TOR TCEQ TCNE TCLT TCLE TCGT TCGE
 %token <type> TLPAREN TRPAREN TLBRACKET TRBRACKET TLBRACE TRBRACE
 %token <type> TCR TCOMMA TDOT
-%token <type> IF ELSE WHILE BREAK CONTINUE RETURN
+%token <type> IF ELSE WHILE BREAK CONTINUE RETURN FOR
 %token <type> ASSIGN SEMICOLON
 %token <int_value> INT_CONSTANT
 %token <str_value> IDENTIFIER
@@ -66,11 +66,10 @@
 // %token <xxx> 制定token从yylval.xxx获取
 
 // 非终结符
-%type <BB> entry areas area code_block loop_block condition_block
+%type <CodeBlock> entry areas area code_block loop_block condition_block
 %type <function_proto> function_prototype // 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
-%type <expression> test_expression test_expression_another// 用于测试的表达式
 %type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression
 %type <expression> code_line assign_line
 %type <expression_list> code_lines
@@ -108,7 +107,7 @@
 //#  	// 考虑之后在这里写，有关中间代码生成的函数: 依赖于LLVM，生成LLVM IR
 //#  }
 
-entry: areas {entryBB = $1; } // 把语法分析树中entry的指针交给entryBB, 因为yacc是从底向上的，这里会被最后访问。此时，codeblock已经搭建好，于是把它交给entryBB，供后续的代码生成。
+entry: areas {entryCodeBlock = $1; } // 把语法分析树中entry的指针交给entryCodeBlock, 因为yacc是从底向上的，这里会被最后访问。此时，codeblock已经搭建好，于是把它交给entryCodeBlock，供后续的代码生成。
 
 // 将程序划分为若干个区域
 areas: area {$$ = new ASTCodeBlockExpression();
@@ -127,12 +126,11 @@ area: function_implementation {
 // TODO: 全局变量声明 global_variable : { /* dosomething */ }
 
 
-function_prototype : test_expression_another { 
-	pass();  
-	$1 = new ASTGeneralExpression();
-	std::cout << "TEST:" << $1->get_class_name() << std::endl;
-	/* dosomething */ 
-}
+function_prototype : type_specifier var_name TLPAREN TRPAREN SEMICOLON{
+	$$ = nullptr;
+	std::cout << "proto matched" << std::endl;
+	}
+	;
 
 function_implementation: 
 	code_block {
@@ -156,7 +154,7 @@ code_block:
 	}
 	;
 
-// 循环块
+// while循环块
 loop_block: 
 	WHILE TLPAREN compare_expression TRPAREN code_block{
 		// TODO: $$ = new ASTWhile($3, $5);
@@ -174,6 +172,9 @@ condition_block:
 		std::cout << "get if_block with else" << std::endl;
 	}
 
+// for循环块
+
+
 // 多行语句
 code_lines:
 	code_line{
@@ -187,18 +188,17 @@ code_lines:
 
 // 单行语句(缩起来的)
 code_line:
-	code_block{
-		// ???这步操作没懂，似乎是强制把子类指针赋给基类指针?
-		// $<BB>$ = $1;
-		$$ = $1;
-	}
-	| var_defination{$<variable_define>$ = $1;} // $$ = $1会报错
+	var_defination{$<variable_define>$ = $1;} // $$ = $1会报错
 	| assign_line{
 		$$ = $1;
 		std::cout << "get assign line" << std::endl;
 	}
-	| loop_block	// ???没有操作？疑惑
-	| condition_block
+	| loop_block{
+		$<CodeBlock>$ = $1;
+	}	// ???没有操作？疑惑
+	| condition_block{
+		$<CodeBlock>$ = $1;
+	}
 	;
 
 // 赋值运算行
@@ -334,23 +334,6 @@ assign_expression:
 		// TODO: 赋值节点 $$ = new ASTAssign($1, index);
 	}
 
-
-// TODO: 测试用
-test_expression :
-	INT IDENTIFIER ASSIGN INT_CONSTANT SEMICOLON { 
-		// 案例：匹配一个inti=1;的语句 
-		// identifer的长度为1
-		// 数字的长度为1
-		std::cout << "match a expression:" << *$1 << " " << *$2 << " " << *$3 << " " << $4 << " " << *$5 << std::endl;
-	}
-
-// TODO: 测试用
-test_expression_another :
-	INT IDENTIFIER ASSIGN IDENTIFIER SEMICOLON {
-		// 案例：匹配一个inti=j;的语句
-		// identifer的长度为1
-		std::cout << "match another expression:" << *$1 << " " << *$2 << " " << *$3 << " " << *$4 << " " << *$5 << std::endl;
-	}
 
 /* 变量类型 */
 type_specifier:
