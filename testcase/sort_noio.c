@@ -35,7 +35,7 @@ int main() {
   i = 0;
   while (i < n) {
     printf("%d ", f[i]);
-    i++;
+    i = i + 1;
   }
   return 0;
 }
