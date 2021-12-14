@@ -74,23 +74,23 @@ void save_value(std::string str);
 "char"		{ save_type("CHAR"); return CHAR; }
 "double"	{ save_type("DOUBLE"); return DOUBLE; }
 "void"		{ save_type("VOID"); return VOID; }
-"extern"    { save_type("EXTERN"); return EXTERN; }
 
 {D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } // TODO: 修改为正确的正则表达式
 
 '(\\.|[^\\'])' {
     // save_type("CHAR_LITERAL");
-    yylval.char_value = yytext;
-    return CHAR_LITERAL;
+    yylval.char_value = new std::string(yytext);
+	std::cout << "char: " << yytext << std::endl; // debug用
+    return CHAR_CONSTANT;
 }	// 字符
 
 {L}({L}|{D})* { save_value("IDENTIFIER"); return IDENTIFIER; }
 
-([1-9][0-9]*)|0|([0-9]\.[0-9]*) {
+([1-9][0-9]*)|0|([0-9]+\.[0-9]*) {
     double temp;
     sscanf(yytext, "%lf", &temp);
     yylval.double_value = temp;
-    return DOUBLE_LITERAL;
+    return DOUBLE_CONSTANT;
 } // double型
 
 [ \t\v\n\f]
