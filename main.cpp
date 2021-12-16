@@ -41,7 +41,7 @@ void test_ast(ASTContext* context) {
   auto integer2 = new ASTInteger(value2);
   // 现在造一个200 + 100的二元运算：
   auto expression =
-      new ASTBinaryExpression('+', dynamic_cast<ASTExpression*>(integer),
+      new ASTBinaryExpression(OP_BI_ADD, dynamic_cast<ASTExpression*>(integer),
                               dynamic_cast<ASTExpression*>(integer2));
 
   // 造了一个左值变量
@@ -75,7 +75,7 @@ void test_ast(ASTContext* context) {
     entry->append_code(ptr);
   }
 
-  auto divexp = new ASTBinaryExpression('/', fun, bun);
+  auto divexp = new ASTBinaryExpression(OP_BI_DIV, fun, bun);
 
   auto assignexp = new ASTVariableAssign(fun, divexp);
 

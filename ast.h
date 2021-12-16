@@ -49,6 +49,19 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_DOUBLE 2
 #define TYPE_CHAR 3
 
+// [二元]运算符Define
+#define OP_BI_ADD 0
+#define OP_BI_SUB 1
+#define OP_BI_MUL 2
+#define OP_BI_DIV 3
+#define OP_BI_LESS 4
+#define OP_BI_MORE 5
+#define OP_BI_LESSEQ 6
+#define OP_BI_MOREEQ 7
+#define OP_BI_AND 8
+#define OP_BI_OR 9
+#define OP_BI_MOD 10
+
 class ASTNode {
   // 所有AST结点的基类
  public:
@@ -148,7 +161,9 @@ class ASTVariableExpression : public ASTExpression {
   int array_length;  // 数组的长度
 
  public:
-  ASTVariableExpression(std::string _name) : name(_name) {}
+  ASTVariableExpression(std::string _name, bool _is_array = false,
+                        int _array_length = -1)
+      : name(_name), is_array(_is_array), array_length(_array_length) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_name(void) { return name; }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
@@ -249,12 +264,12 @@ class ASTInteger : public ASTExpression {
 class ASTBinaryExpression : public ASTExpression {
   // 所有二元运算的类，例如1+1, 2+2, 3+a, a+b
  private:
-  char operation;  // +, -, *, /
+  int operation;  // +, -, *, /
   ASTExpression* lhs;
   ASTExpression* rhs;
 
  public:
-  ASTBinaryExpression(char _operation, ASTExpression* _lhs, ASTExpression* _rhs)
+  ASTBinaryExpression(int _operation, ASTExpression* _lhs, ASTExpression* _rhs)
       : operation(_operation), lhs(_lhs), rhs(_rhs) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTBinaryExpression"; }
