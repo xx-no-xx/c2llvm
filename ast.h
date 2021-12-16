@@ -36,6 +36,9 @@ class ASTBinaryExpression;  // 二元运算的类，形如 a + 1 [不包括赋�
 // 常量
 class ASTInteger;  // int 常量，形如998244353
 
+// 控制流
+class ASTIfExpression;  // IF/ELSE分支
+
 // 预留
 class ASTGeneralExpression;  // not used: 预留
 class ASTGeneralPrototype;   // not used: 预留
@@ -277,6 +280,34 @@ class ASTCallExpression : public ASTExpression {
   void debug(void) override {
     // TODO
     return;
+  }
+};
+
+class ASTIfExpression : public ASTExpression {
+  /* 对应if-else分支： if(condition) {ifcode} else {elsecode} */
+ private:
+  ASTExpression* condition;  //
+  ASTExpression* ifcode;
+  ASTExpression* elsecode;
+
+ public:
+  ASTIfExpression(ASTExpression* _condition, ASTExpression* _ifcode,
+                  ASTExpression* _elsecode = nullptr)
+      : condition(_condition), ifcode(_ifcode), elsecode(_elsecode) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTIfExpression"; }
+  void debug(void) override {
+    std::cout << "if( ";
+    condition->debug();
+    std::cout << " ) [then]{ ";
+    ifcode->debug();
+    std::cout << " }";
+    if (elsecode) {
+      std::cout << "else { ";
+      elsecode->debug();
+      std::cout << " }";
+    }
+    std::cout << "[END IF/ELSE]";
   }
 };
 

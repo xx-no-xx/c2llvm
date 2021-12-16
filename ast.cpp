@@ -41,3 +41,4 @@ void ASTFunctionImp::set_entry(ASTCodeBlockExpression* codeblock) {
   this->function_entry = codeblock;
   return;
 }
+

@@ -207,3 +207,9 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   // * 目前不考虑多个函数的情况
   return nullptr;
 }
+
+llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
+  // todo
+
+  return nullptr;
+}
