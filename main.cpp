@@ -39,52 +39,58 @@ void test_ast(ASTContext* context) {
 
   int value2 = 200;
   auto integer2 = new ASTInteger(value2);
-  // 现在造一个200 + 100的二元运算：
-  auto expression =
-      new ASTBinaryExpression(OP_BI_ADD, dynamic_cast<ASTExpression*>(integer),
-                              dynamic_cast<ASTExpression*>(integer2));
 
   // 造了一个左值变量
-  auto lhs = new ASTVariableExpression("lhs");
+  auto x = new ASTVariableExpression("x");
 
   // 将它定义出来，值为上述的加法表达式
-  auto defexp = new ASTVariableDefine(TYPE_INT, lhs,
-                                      dynamic_cast<ASTExpression*>(expression));
+  auto defexp = new ASTVariableDefine(
+      TYPE_INT, x,
+      dynamic_cast<ASTExpression*>(integer));  // int lhs = 100;
 
-  auto fun = new ASTVariableExpression("fun");
+  /* 下面是非常不好的实例 */
+  /* 不要用，之后可以删除 */
 
-  auto bun = new ASTVariableExpression("bun");
+  auto if_code = new ASTCodeBlockExpression();
+  auto else_code = new ASTCodeBlockExpression();
+  auto if_code_2 = new ASTCodeBlockExpression();
+  auto else_code_2 = new ASTCodeBlockExpression();
+
+  auto y = new ASTVariableExpression("y");
 
   auto defexp2 =
-      new ASTVariableDefine(TYPE_INT, fun, dynamic_cast<ASTExpression*>(lhs));
+      new ASTVariableDefine(TYPE_INT, y, dynamic_cast<ASTExpression*>(integer));
 
-  auto defexp3 =
-      new ASTVariableDefine(TYPE_INT, bun, dynamic_cast<ASTExpression*>(lhs));
+  auto assexp = new ASTVariableAssign(y, x);
 
-  // 把这个变量放进上述的codeblock,
-  // 首先用dynamic_cast把它强转为需要的指针类型。如果转换不成功，ptr会是nullptr
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp)) {  // int lhs = 100 + 300;
-    entry->append_code(ptr);
-  }
+  entry->append_code(dynamic_cast<ASTNode*>(defexp));
+  entry->debug();
+  if_code->append_code(dynamic_cast<ASTNode*>(defexp2));
+  if_code_2->append_code(dynamic_cast<ASTNode*>(defexp2));
 
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp2)) {  // int fun = lhs;
-    entry->append_code(ptr);
-  }
+  else_code->append_code(dynamic_cast<ASTNode*>(defexp2));
+  else_code->append_code(dynamic_cast<ASTNode*>(assexp));
 
-  if (auto ptr = dynamic_cast<ASTNode*>(defexp3)) {  // int bun = lhs;
-    entry->append_code(ptr);
-  }
+  else_code_2->append_code(dynamic_cast<ASTNode*>(defexp2));
+  else_code_2->append_code(dynamic_cast<ASTNode*>(assexp));
 
-  auto divexp = new ASTBinaryExpression(OP_BI_DIV, fun, bun);
+  auto ifexp = new ASTIfExpression(x, if_code, else_code);
 
-  auto assignexp = new ASTVariableAssign(fun, divexp);
+  auto ifexp_a = new ASTIfExpression(x, if_code_2, else_code_2);
 
-  if (auto ptr = dynamic_cast<ASTNode*>(assignexp)) {  // fun = bun;
-    entry->append_code(ptr);
-  }
+  auto bb = new ASTCodeBlockExpression();
+
+  bb->append_code(ifexp);
+
+  auto bb2 = new ASTCodeBlockExpression();
+
+  bb2->append_code(ifexp_a);
+
+  auto ifexp2 = new ASTIfExpression(x, bb, bb2);
+
+  entry->append_code(dynamic_cast<ASTNode*>(ifexp2));
 
   funcimp->debug();
-
   funcimp->generate(context);  // 生成函数的代码
 
   // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用

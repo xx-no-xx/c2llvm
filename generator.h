@@ -1,7 +1,6 @@
 // 用于实际生成llvm ir的generator
 #ifndef C2LLVM_GENERATOR_HPP
 #define C2LLVM_GENERATOR_HPP
-#include <llvm/ADT/APInt.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/Function.h>
@@ -19,13 +18,13 @@
 #include "ast.h"
 
 class ASTContext {
+ private:
+  std::stack<ASTCodeBlockExpression *> codestack;  // 处理跨函数而使用的符号表
  public:
   llvm::LLVMContext *context;  // 上下文
   llvm::IRBuilder<> *builder;  // 用来造IR的工具
   llvm::Module *current_m;  // 当前所在的module，大概可以理解为当前程序
   llvm::Function *current_f;
-
-  std::stack<ASTCodeBlockExpression *> codestack;  // 处理跨函数而使用的符号表
 
   ASTContext() {
     context = new llvm::LLVMContext();
@@ -35,9 +34,18 @@ class ASTContext {
     std::cout << "AST Context made" << std::endl;
   }
 
-  // std::map<std::string, llvm::Value *> symboltable;  // 符号表
+  void push_codeblock(
+      ASTCodeBlockExpression *codeblock) {  // 加入代码块，并复制已有的符号表
+    if (!codestack.empty()) {
+      codeblock->copy_symbol_from(codestack.top());
+    }
+    codestack.push(codeblock);
+  }
+  void pop_codeblock(void) { codestack.pop(); }  // 释放当前代码块
+  ASTCodeBlockExpression *get_codestack_top(void) {
+    return codestack.top();
+  };  // 获取最新（当前的代码块）
 
-  //  std::map<std::string, Value*> global_symboltable;
   // TODO: 支持全局变量/支持多函数
 
   void clear_symboltable(void);

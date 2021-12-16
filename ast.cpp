@@ -20,6 +20,12 @@ void ASTCodeBlockExpression::clear_symbol(void) {
   return;
 }
 
+void ASTCodeBlockExpression::copy_symbol_from(
+    ASTCodeBlockExpression* codeblock) {
+  symboltable = codeblock->get_symboltable();
+  return;
+}
+
 bool ASTCodeBlockExpression::add_symbol(std::string symbol_name,
                                         llvm::Value* symbol) {
   if (this->symboltable.count(symbol_name) > 0) {
@@ -41,4 +47,3 @@ void ASTFunctionImp::set_entry(ASTCodeBlockExpression* codeblock) {
   this->function_entry = codeblock;
   return;
 }
-

@@ -17,7 +17,7 @@ class ASTNode;        // 所有 AST 结点的类
 class ASTExpression;  // 所有表达式的类，除原型外所有表达式的基类,
                       // 它们可以做赋值的右值。
 class ASTPrototype;  // 所有原型式子的基类, 包含了许多重要的信息
-class ASTCodeBlockExpression;  // 一段代码的类, 对应了一些代码
+class ASTCodeBlockExpression;  // 一段代码的类, 对应了一些代码. 生成从entryBB->exitBB的一大长段，如果check_return()==True,那么没有exitBB，在这里就全部返回了。
 
 // 函数相关
 class ASTFunctionProto;  // 函数原型
@@ -64,8 +64,11 @@ class ASTGeneralPrototype;   // not used: 预留
 
 class ASTNode {
   // 所有AST结点的基类
+  bool is_ret = false;  // 该ASTNode是否没有ret, 以至于没有后继
  public:
   ASTNode() {}
+  void set_return() { is_ret = true; }
+  bool check_return() { return is_ret; }
   virtual llvm::Value* generate(ASTContext* astcontext) {
     // 生成该AST结点对应的llvmIR代码
     return nullptr;
@@ -97,6 +100,7 @@ class ASTExpression : public ASTNode {
   // 所有AST表达式的基类
  public:
   ASTExpression() {}
+
   virtual llvm::Value* generate(ASTContext* astcontext) override;
   virtual std::string get_class_name() override { return "ASTExpression"; }
   virtual void debug() override {
@@ -124,6 +128,7 @@ class ASTGeneralExpression : public ASTExpression {
 
 class ASTCodeBlockExpression : public ASTExpression {
   // 该类对应着一序列的代码块，及一些AST的序列
+
   std::vector<ASTNode*> codes;
   std::map<std::string, llvm::Value*> symboltable;  // 符号表
 
@@ -132,8 +137,22 @@ class ASTCodeBlockExpression : public ASTExpression {
     codes.clear();
     symboltable.clear();
   }
-  llvm::BasicBlock* entryBB;  // 此处是ASTCodeBlockExpression的入口BB。它可能后面有一堆BB。
-  llvm::Value* generate(ASTContext* astcontext) override; // 此处会生成一个以entryBB开头的控制流图
+  llvm::BasicBlock* entryBB;  // 入口BB。它可能后面有一堆BB。
+  llvm::BasicBlock* exitBB;   // 出口基本块，至多只有一个。
+  llvm::BasicBlock* get_exit(void) {
+    // 如果为is_ret为true, exitBB不成立。
+    if (this->check_return()) {
+      std::cout << "panic: get exit for a ret block" << std::endl;
+    }
+    return exitBB;
+  }
+  void copy_symbol_from(ASTCodeBlockExpression* codeblock);
+  std::map<std::string, llvm::Value*> get_symboltable(void) {
+    return this->symboltable;
+  }  // 获取符号表
+  void set_exit(llvm::BasicBlock* _exit) { exitBB = _exit; }
+  llvm::Value* generate(ASTContext* astcontext)
+      override;  // 此处会生成一个以entryBB开头的控制流图
   std::string get_class_name() override { return "ASTCodeBlockExpression"; }
   void set_function(ASTFunctionImp*);  // 设置代码块对应着哪一个函数的开头
   void append_code(ASTNode*);  // 将新的AST结点接在已有代码的末尾
@@ -179,6 +198,7 @@ class ASTVariableAssign : public ASTExpression {
   ASTVariableAssign(ASTVariableExpression* _lhs, ASTExpression* _rhs)
       : lhs(_lhs), rhs(_rhs) {}
   llvm::Value* generate(ASTContext* astcontext) override;
+
   std::string get_class_name(void) override { return "ASTVariableAssign"; }
   void debug(void) override {
     lhs->debug();
@@ -301,13 +321,13 @@ class ASTCallExpression : public ASTExpression {
 class ASTIfExpression : public ASTExpression {
   /* 对应if-else分支： if(condition) {ifcode} else {elsecode} */
  private:
-  ASTExpression* condition;  
-  ASTExpression* ifcode; // ! 需要改成ASTCodeBlockExpression吗？
-  ASTExpression* elsecode;
+  ASTExpression* condition;
+  ASTCodeBlockExpression* ifcode;
+  ASTCodeBlockExpression* elsecode;
 
  public:
-  ASTIfExpression(ASTExpression* _condition, ASTExpression* _ifcode,
-                  ASTExpression* _elsecode = nullptr)
+  ASTIfExpression(ASTExpression* _condition, ASTCodeBlockExpression* _ifcode,
+                  ASTCodeBlockExpression* _elsecode = nullptr)
       : condition(_condition), ifcode(_ifcode), elsecode(_elsecode) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTIfExpression"; }

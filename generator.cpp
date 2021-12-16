@@ -66,33 +66,37 @@ llvm::Value* ASTGeneralPrototype::generate(ASTContext* astcontext) {
 llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
   // TODO
   llvm::Value* retcode = nullptr;  // 认为它什么也不返回
-  astcontext->codestack.push(this);
+  astcontext->push_codeblock(
+      this);  // 更新codeblock，每次只选择当前路径语句上可能的symboltable
 
-  // TODO: 设置名字
   //  if(!this->bbcreated) {
   // TODO: 循环生成CFG
 
   // TODO: 如果这个codeblock不属于任何函数，即全局变量的情况
 
   // }
-  // * 假设它在函数内部，没有多余的基本块
   this->entryBB = llvm::BasicBlock::Create(
       *(astcontext->context), "",
       astcontext->current_f);  // 在这个函数的最后加入一个基本块
-
-  // TODO: 不应该在此处处理该code block的依赖
-//  astcontext->builder->CreateBr(this->entryBB);
-  // 但前辈们没有...
 
   astcontext->builder->SetInsertPoint(
       this->entryBB);  // 设置IRBuilder在这个基本块上运行
 
   // TODO: 处理参数
 
+  this->debug();
   for (auto& code : this->codes) {
-    retcode = code->generate(astcontext);  // retcode 是代码块最后的那一条命令
+    code->generate(astcontext);  // retcode 是代码块最后的那一条命令
+    if (code->check_return()) {
+      this->set_return();
+      break;
+    }
   }
-  astcontext->codestack.pop();
+
+  if (!this->check_return()) {  // 如果当前ASTCodeBlock可以有后继，设置exitBB
+    this->set_exit(astcontext->builder->GetInsertBlock());
+  }
+  astcontext->pop_codeblock();
   return retcode;
 }
 
@@ -104,8 +108,8 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
 
 // 返回一个变量的值。它只能被作为表达式的右值。
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
-  auto var =
-      astcontext->codestack.top()->get_symbol(this->get_name());  // 获取符号表
+  auto var = astcontext->get_codestack_top()->get_symbol(
+      this->get_name());  // 获取符号表
   auto var_load_name = var->getName() + llvm::Twine("_load");  // 取名为xxx_load
   auto var_load = astcontext->builder->CreateLoad(
       var->getType()->getPointerElementType(), var,
@@ -121,6 +125,7 @@ llvm::Value* ASTVariableAssign::generate(ASTContext* astcontext) {
   return assign;
 }
 
+// int A = B;的赋值语句
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
   auto inst = astcontext->create_local_var(type, this->lhs->get_name());
   if (this->rhs != nullptr) {
@@ -129,8 +134,8 @@ llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
   return inst;
 }
 
+// 在函数原型部分，生成这个函数本身
 llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
-  // 在函数原型部分，生成这个函数本身
   llvm::FunctionType* functype =
       llvm::FunctionType::get(astcontext->get_type(TYPE_VOID), false);
   // TODO: 当前创造了一个void() {}的函数
@@ -160,12 +165,16 @@ llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
   // TODO: 符号表
   // TODO: astcontext->load_argument(); // 载入函数的参数
 
+  // 如果codeblock顺利gen,
+  // 它创造的bb会在函数的入口上。因为函数内部没有任何多余的bb了。
+  this->function_entry->generate(astcontext);
+  /*
   if (llvm::Value* retcode = this->function_entry->generate(astcontext)) {
     //    astcontext->builder->CreateRet(retcode);
     // TODO: retcode
-    std::cout << "Function Generated!" << std::endl;
     //    return func;
-  }
+  } */
+  std::cout << "Function Generated!" << std::endl;
   astcontext->builder->CreateRet(0);  // return void
   return nullptr;
 }
@@ -204,10 +213,50 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
 }
 
 llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
-  // todo
-  auto gen_cond = this->condition->generate(astcontext);
-  auto gen_if = this->ifcode->generate(astcontext);
-  auto gen_else = this->ifcode->generate(astcontext);
+  // todo: 对于a < b的条件特别判断？
+  auto condori = this->condition->generate(astcontext);  // 原始condition
 
-  return nullptr;
+  auto condfloat = astcontext->builder->CreateFPCast(
+      condori, llvm::Type::getFloatTy(*(astcontext->context)));  // 强转float
+
+  auto condinst = astcontext->builder->CreateFCmpONE(
+      condfloat,
+      llvm::ConstantFP::get(
+          llvm::Type::getFloatTy(*(astcontext->context)),  // 与0.0比较
+          float(0.0)));
+
+  auto ori = astcontext->builder->GetInsertBlock();
+
+  // todo: else为空的情况
+
+  this->ifcode->generate(astcontext);
+  this->elsecode->generate(astcontext);
+  astcontext->builder->SetInsertPoint(ori);
+
+  auto brinst = astcontext->builder->CreateCondBr(
+      condinst, ifcode->entryBB,
+      elsecode->entryBB);  // 设置到if/else基本块开头的branch
+
+  if (this->ifcode->check_return() && this->elsecode->check_return()) {
+    set_return();
+    return nullptr;  // ! 是否可能需要返回别的东西？
+  }
+
+  auto edBB = llvm::BasicBlock::Create(
+      *(astcontext->context), "",
+      astcontext->current_f);  // 设置if/else结束后汇总到这个bb
+
+  if (!ifcode->check_return()) {
+    astcontext->builder->SetInsertPoint(
+        ifcode->get_exit());  // 设置在ifBB的末尾
+    astcontext->builder->CreateBr(edBB);
+  }
+  if (!elsecode->check_return()) {
+    std::cout << elsecode->get_class_name() << std::endl;
+    astcontext->builder->SetInsertPoint(
+        elsecode->get_exit());  // 设置在elseBB的末尾
+    astcontext->builder->CreateBr(edBB);
+  }
+  astcontext->builder->SetInsertPoint(edBB);
+  return brinst;
 }
