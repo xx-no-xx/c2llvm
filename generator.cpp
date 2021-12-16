@@ -268,9 +268,8 @@ llvm::Value* ASTWhileExpression::generate(ASTContext* astcontext) {
   this->code->generate(astcontext);
   astcontext->builder->SetInsertPoint(ori);
 
-  auto edBB = llvm::BasicBlock::Create(
-      *(astcontext->context), "",
-      astcontext->current_f);  // 设置if/else结束后汇总到这个bb
+  auto edBB = llvm::BasicBlock::Create(*(astcontext->context), "",
+                                       astcontext->current_f);  // 设置while循环
 
   auto brinst = astcontext->builder->CreateCondBr(
       condinst, this->code->entryBB, edBB);  // 设置到if/else基本块开头的branch
@@ -279,6 +278,52 @@ llvm::Value* ASTWhileExpression::generate(ASTContext* astcontext) {
     astcontext->builder->SetInsertPoint(
         this->code->get_exit());  // 设置在ifBB的末尾
     astcontext->builder->CreateBr(ori);
+  }
+  astcontext->builder->SetInsertPoint(edBB);
+  return nullptr;  // !
+}
+
+llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
+  // todo: 对于a < b的条件特别判断？
+
+  auto lst = astcontext->builder->GetInsertBlock();
+  this->prepare->generate(astcontext);
+  astcontext->builder->SetInsertPoint(lst);  // 从last -> prepare
+  astcontext->builder->CreateBr(prepare->entryBB);
+  // todo: if prepare return here
+  astcontext->builder->SetInsertPoint(prepare->get_exit());
+
+  auto stBB = llvm::BasicBlock::Create(*(astcontext->context), "",
+                                       astcontext->current_f);
+  astcontext->builder->CreateBr(stBB);  // 从prepare -> startBB
+  astcontext->builder->SetInsertPoint(stBB);
+
+  auto condori = this->condition->generate(astcontext);  // 原始condition
+  auto condfloat = astcontext->builder->CreateFPCast(
+      condori, llvm::Type::getFloatTy(*(astcontext->context)));  // 强转float
+  auto condinst = astcontext->builder->CreateFCmpONE(
+      condfloat,
+      llvm::ConstantFP::get(
+          llvm::Type::getFloatTy(*(astcontext->context)),  // 与0.0比较
+          float(0.0)));
+
+  this->code->generate(astcontext);
+
+  auto edBB = llvm::BasicBlock::Create(
+      *(astcontext->context), "",
+      astcontext->current_f);  // 设置if/else结束后汇总到这个bb
+
+  astcontext->builder->SetInsertPoint(stBB);
+  auto brinst = astcontext->builder->CreateCondBr(condinst, this->code->entryBB,
+                                                  edBB);  // 设置for循环
+
+  if (!this->code->check_return()) {
+    action->generate(astcontext);
+    astcontext->builder->CreateBr(stBB);  // 设置action跳回condition
+
+    astcontext->builder->SetInsertPoint(
+        this->code->get_exit());  // 设置在从code跳到action
+    astcontext->builder->CreateBr(action->entryBB);
   }
   astcontext->builder->SetInsertPoint(edBB);
   return brinst;

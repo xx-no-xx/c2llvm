@@ -352,7 +352,7 @@ class ASTIfExpression : public ASTExpression {
 };
 
 class ASTWhileExpression : public ASTExpression {
-  /* 对应while： while(condition) {code} */
+  /* 对应while： while(condition(expression)) {code(code block)} */
  private:
   ASTExpression* condition;
   ASTCodeBlockExpression* code;
@@ -369,6 +369,40 @@ class ASTWhileExpression : public ASTExpression {
     code->debug();
     std::cout << " }";
     std::cout << "[END WHILE]";
+  }
+};
+
+class ASTForExpression : public ASTExpression {
+  /* 对应for： for(start(codeblock); condition(expression); action(codeblock))
+   * {code(code block)} */
+ private:
+  ASTExpression* condition;
+  ASTCodeBlockExpression* prepare;
+  ASTCodeBlockExpression* code;
+  ASTCodeBlockExpression* action;
+
+ public:
+  ASTForExpression(
+      ASTExpression* _condition, ASTCodeBlockExpression* _code,
+      ASTCodeBlockExpression* _prepare = new ASTCodeBlockExpression(),
+      ASTCodeBlockExpression* _action = new ASTCodeBlockExpression())
+      : condition(_condition),
+        code(_code),
+        prepare(_prepare),
+        action(_action) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTForExpression"; }
+  void debug(void) override {
+    std::cout << "for( ";
+    prepare->debug();
+    std::cout << ";";
+    condition->debug();
+    std::cout << ";";
+    action->debug();
+    std::cout << " ) [then]{ ";
+    code->debug();
+    std::cout << " }";
+    std::cout << "[END FOR]";
   }
 };
 

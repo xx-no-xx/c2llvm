@@ -60,6 +60,18 @@ void test_ast(ASTContext* context) {
 
   entry->append_code(whileexp);
 
+  auto assexp2 = new ASTVariableAssign(x, integer2);
+
+  auto preparecode = new ASTCodeBlockExpression();
+  preparecode->append_code(assexp2);
+
+  auto actioncode = new ASTCodeBlockExpression();
+  actioncode->append_code(delexp);
+
+  auto forcode = new ASTCodeBlockExpression();
+  auto forexp = new ASTForExpression(x, forcode, preparecode, actioncode);
+
+  entry->append_code(forexp);
   //  auto whileexp = new AST
 
   /* 下面是非常不好的实例 */
