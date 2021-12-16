@@ -67,6 +67,7 @@ llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
   // TODO
   llvm::Value* retcode = nullptr;  // 认为它什么也不返回
   astcontext->codestack.push(this);
+
   // TODO: 设置名字
   //  if(!this->bbcreated) {
   // TODO: 循环生成CFG
@@ -75,22 +76,21 @@ llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
 
   // }
   // * 假设它在函数内部，没有多余的基本块
-  this->BB = llvm::BasicBlock::Create(
-      *(astcontext->context), "foo_basicblock",
+  this->entryBB = llvm::BasicBlock::Create(
+      *(astcontext->context), "",
       astcontext->current_f);  // 在这个函数的最后加入一个基本块
 
-  // ! 理论上需要有这句话
-  astcontext->builder->CreateBr(this->BB);
+  // TODO: 不应该在此处处理该code block的依赖
+//  astcontext->builder->CreateBr(this->entryBB);
   // 但前辈们没有...
 
   astcontext->builder->SetInsertPoint(
-      this->BB);  // 设置IRBuilder在这个基本块上运行
+      this->entryBB);  // 设置IRBuilder在这个基本块上运行
 
   // TODO: 处理参数
 
   for (auto& code : this->codes) {
-    retcode =
-        code->generate(astcontext);  // retcode 是这个代码块最后的那一条命令
+    retcode = code->generate(astcontext);  // retcode 是代码块最后的那一条命令
   }
   astcontext->codestack.pop();
   return retcode;
@@ -213,5 +213,6 @@ llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
   auto gen_cond = this->condition->generate(astcontext);
   auto gen_if = this->ifcode->generate(astcontext);
   auto gen_else = this->ifcode->generate(astcontext);
+
   return nullptr;
 }

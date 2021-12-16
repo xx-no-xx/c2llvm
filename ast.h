@@ -132,8 +132,8 @@ class ASTCodeBlockExpression : public ASTExpression {
     codes.clear();
     symboltable.clear();
   }
-  llvm::BasicBlock* BB;  // ! I have NO IDEA about what this BB is doing here
-  llvm::Value* generate(ASTContext* astcontext) override;
+  llvm::BasicBlock* entryBB;  // 此处是ASTCodeBlockExpression的入口BB。它可能后面有一堆BB。
+  llvm::Value* generate(ASTContext* astcontext) override; // 此处会生成一个以entryBB开头的控制流图
   std::string get_class_name() override { return "ASTCodeBlockExpression"; }
   void set_function(ASTFunctionImp*);  // 设置代码块对应着哪一个函数的开头
   void append_code(ASTNode*);  // 将新的AST结点接在已有代码的末尾
@@ -301,8 +301,8 @@ class ASTCallExpression : public ASTExpression {
 class ASTIfExpression : public ASTExpression {
   /* 对应if-else分支： if(condition) {ifcode} else {elsecode} */
  private:
-  ASTExpression* condition;  //
-  ASTExpression* ifcode;
+  ASTExpression* condition;  
+  ASTExpression* ifcode; // ! 需要改成ASTCodeBlockExpression吗？
   ASTExpression* elsecode;
 
  public:
