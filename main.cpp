@@ -46,11 +46,26 @@ void test_ast(ASTContext* context) {
   // 将它定义出来，值为上述的加法表达式
   auto defexp = new ASTVariableDefine(
       TYPE_INT, x,
-      dynamic_cast<ASTExpression*>(integer));  // int lhs = 100;
+      dynamic_cast<ASTExpression*>(integer2));  // int lhs = 100;
+
+  entry->append_code(defexp);
+
+  auto delexp = new ASTBinaryExpression(OP_BI_SUB, x, integer);
+  auto assexp = new ASTVariableAssign(x, delexp);
+
+  auto whilecode = new ASTCodeBlockExpression();
+  whilecode->append_code(assexp);
+
+  auto whileexp = new ASTWhileExpression(x, whilecode);
+
+  entry->append_code(whileexp);
+
+  //  auto whileexp = new AST
 
   /* 下面是非常不好的实例 */
   /* 不要用，之后可以删除 */
 
+  /*
   auto if_code = new ASTCodeBlockExpression();
   auto else_code = new ASTCodeBlockExpression();
   auto if_code_2 = new ASTCodeBlockExpression();
@@ -88,7 +103,7 @@ void test_ast(ASTContext* context) {
 
   auto ifexp2 = new ASTIfExpression(x, bb, bb2);
 
-  entry->append_code(dynamic_cast<ASTNode*>(ifexp2));
+  entry->append_code(dynamic_cast<ASTNode*>(ifexp2)); */
 
   funcimp->debug();
   funcimp->generate(context);  // 生成函数的代码

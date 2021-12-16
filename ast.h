@@ -17,7 +17,9 @@ class ASTNode;        // 所有 AST 结点的类
 class ASTExpression;  // 所有表达式的类，除原型外所有表达式的基类,
                       // 它们可以做赋值的右值。
 class ASTPrototype;  // 所有原型式子的基类, 包含了许多重要的信息
-class ASTCodeBlockExpression;  // 一段代码的类, 对应了一些代码. 生成从entryBB->exitBB的一大长段，如果check_return()==True,那么没有exitBB，在这里就全部返回了。
+class
+    ASTCodeBlockExpression;  // 一段代码的类, 对应了一些代码.
+                             // 生成从entryBB->exitBB的一大长段，如果check_return()==True,那么没有exitBB，在这里就全部返回了。
 
 // 函数相关
 class ASTFunctionProto;  // 函数原型
@@ -37,7 +39,9 @@ class ASTBinaryExpression;  // 二元运算的类，形如 a + 1 [不包括赋�
 class ASTInteger;  // int 常量，形如998244353
 
 // 控制流
-class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition, if_code, else_code)两种形式。
+class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition,
+                        // if_code, else_code)两种形式。
+class ASTWhileExpression;  // While循环，支持while(condition){code}
 
 // 预留
 class ASTGeneralExpression;  // not used: 预留
@@ -326,8 +330,9 @@ class ASTIfExpression : public ASTExpression {
   ASTCodeBlockExpression* elsecode;
 
  public:
-  ASTIfExpression(ASTExpression* _condition, ASTCodeBlockExpression* _ifcode,
-                  ASTCodeBlockExpression* _elsecode = new ASTCodeBlockExpression())
+  ASTIfExpression(
+      ASTExpression* _condition, ASTCodeBlockExpression* _ifcode,
+      ASTCodeBlockExpression* _elsecode = new ASTCodeBlockExpression())
       : condition(_condition), ifcode(_ifcode), elsecode(_elsecode) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTIfExpression"; }
@@ -343,6 +348,27 @@ class ASTIfExpression : public ASTExpression {
       std::cout << " }";
     }
     std::cout << "[END IF/ELSE]";
+  }
+};
+
+class ASTWhileExpression : public ASTExpression {
+  /* 对应while： while(condition) {code} */
+ private:
+  ASTExpression* condition;
+  ASTCodeBlockExpression* code;
+
+ public:
+  ASTWhileExpression(ASTExpression* _condition, ASTCodeBlockExpression* _code)
+      : condition(_condition), code(_code) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTWhileExpression"; }
+  void debug(void) override {
+    std::cout << "while( ";
+    condition->debug();
+    std::cout << " ) [then]{ ";
+    code->debug();
+    std::cout << " }";
+    std::cout << "[END WHILE]";
   }
 };
 
