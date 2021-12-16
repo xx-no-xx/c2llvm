@@ -157,11 +157,6 @@ llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
     return nullptr;
   }
 
-  auto entryBB = llvm::BasicBlock::Create(
-      *(astcontext->context), "entry__" + this->prototype->get_name(),
-      func);  // 创建这个函数的entry基本块
-  astcontext->builder->SetInsertPoint(entryBB);  // 设置IRbuilder到这个基本块上
-
   // TODO: 符号表
   // TODO: astcontext->load_argument(); // 载入函数的参数
 
