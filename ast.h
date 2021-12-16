@@ -9,22 +9,41 @@
 #include <utility>
 #include <vector>
 
-class ASTContext;
+// 环境
+class ASTContext; // 用于存储当前语法分析树的上下文信息
 
-class ASTFunctionProto;
-class ASTFunctionImp;
+// 基础的类
+class ASTNode; // 所有 AST 结点的类
+class ASTExpression; // 所有表达式的类，除原型外所有表达式的基类, 它们可以做赋值的右值。
+class ASTPrototype; // 所有原型式子的基类, 包含了许多重要的信息
+class ASTCodeBlockExpression; // 一段代码的类, 对应了一些代码
 
-class ASTExpression;
-class ASTGeneralExpression;
+// 函数相关
+class ASTFunctionProto; // 函数原型
+class ASTFunctionImp; // 函数实现
+class ASTCallExpresion; // todo: 函数调用实现
 
-class ASTVariableExpression;
-class ASTVariableAssign;
+// 非数组/字符串变量相关
+class ASTVariableDefine; // 变量定义的类，形如int a = b;
+class ASTVariableAssign; // 变量赋值的类，形如a = b; 
+class ASTVariableExpression; // 变量的类，不包括数组变量，调用它的generate方法，会生成该变量的右值代码
 
-class ASTCodeBlockExpression;
-class ASTFunctionProto;
+// 表达式相关
+class ASTBinaryExpression; // 二元运算的类，形如 a + 1 [不包括赋值]
 
+// 常量
+class ASTInteger; // int 常量，形如998244353
+
+
+// 预留
+class ASTGeneralExpression; // not used: 预留
+class ASTGeneralPrototype; // not used: 预留
+
+// Type Define 
 #define TYPE_VOID 0
 #define TYPE_INT 1
+#define TYPE_DOUBLE 2
+#define TYPE_CHAR 3
 
 class ASTNode {
   // 所有AST结点的基类
