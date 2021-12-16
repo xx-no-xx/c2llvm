@@ -227,7 +227,6 @@ llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
 
   auto ori = astcontext->builder->GetInsertBlock();
 
-  // todo: else为空的情况
 
   this->ifcode->generate(astcontext);
   this->elsecode->generate(astcontext);

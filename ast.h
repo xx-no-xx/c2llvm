@@ -37,7 +37,7 @@ class ASTBinaryExpression;  // 二元运算的类，形如 a + 1 [不包括赋�
 class ASTInteger;  // int 常量，形如998244353
 
 // 控制流
-class ASTIfExpression;  // IF/ELSE分支
+class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition, if_code, else_code)两种形式。
 
 // 预留
 class ASTGeneralExpression;  // not used: 预留
@@ -327,7 +327,7 @@ class ASTIfExpression : public ASTExpression {
 
  public:
   ASTIfExpression(ASTExpression* _condition, ASTCodeBlockExpression* _ifcode,
-                  ASTCodeBlockExpression* _elsecode = nullptr)
+                  ASTCodeBlockExpression* _elsecode = new ASTCodeBlockExpression())
       : condition(_condition), ifcode(_ifcode), elsecode(_elsecode) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTIfExpression"; }
