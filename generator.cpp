@@ -412,7 +412,6 @@ llvm::Value* ASTArrayExpression::generate_ptr(ASTContext* astcontext) {
 
 llvm::Value* ASTArrayAssign::generate(ASTContext* astcontext) {
   auto var = this->lhs->generate_ptr(astcontext);
-  llvm::errs() << *var << "\n";
   auto assign =
       astcontext->builder->CreateStore(this->rhs->generate(astcontext), var);
   return assign;

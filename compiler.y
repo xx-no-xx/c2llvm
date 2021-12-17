@@ -169,12 +169,11 @@ loop_block:
 // 条件块
 condition_exp:
 	IF TLPAREN logic_expression TRPAREN code_block %prec LOWER_THAN_ELSE{
-		// TODO: $$ = new ASTIf($3, $5, nullptr);
 		$<expression>$ = new ASTIfExpression($3, $5);
 		std::cout << "get if_block without else" << std::endl;
 	}
 	| IF TLPAREN logic_expression TRPAREN code_block ELSE code_block{
-		// TODO: $$ = new ASTIf($3, $5, nullptr);
+		$<expression>$ = new ASTIfExpression($3, $5, $7);
 		std::cout << "get if_block with else" << std::endl;
 	}
 
@@ -234,6 +233,7 @@ var_defination:
 		$$ = new ASTVariableDefine($1, $2, $4);
 	}
 	| type_specifier var_name TLBRACKET INT_CONSTANT TRBRACKET SEMICOLON {
+		$2->set_array($4);
 		$$ = new ASTVariableDefine($1, $2, nullptr);
 	}
 	;
@@ -266,8 +266,8 @@ basic_expression:
 // 后缀表达式，如a, a[10], foo(a, b)，目前仅有数组
 postfix_expression: 
 	basic_expression {$$ = $1;}
-	| var_name TLBRACKET calculate_expression TRBRACKET {
-		// TODO: 增加数组的AST
+	| array_with_index_name {
+		$$ = $1;
 		std::cout << "postfix: array" << std::endl;
 	}
 	;
@@ -281,13 +281,9 @@ primary_expression:
 calculate_expression:
 	sum_expression{ $$ = $1; }
 	| calculate_expression TADD sum_expression{
-		// TODO: new 一个二元运算的node
-		// $$ = $1 + $3;
 		$$ = new ASTBinaryExpression(OP_BI_ADD, $1, $3);
 	}
 	| calculate_expression TSUB sum_expression{
-		// TODO: new 一个二元运算的node
-		// $$ = $1 - $3;
 		$$ = new ASTBinaryExpression(OP_BI_SUB, $1, $3);
 	}
 ;
@@ -296,18 +292,12 @@ calculate_expression:
 sum_expression:
 	primary_expression {$$ = $1;}
 	| sum_expression TMUL primary_expression {
-		// $$ = $1 * $3;
-		// TODO: new 一个二元运算的node
 		$$ = new ASTBinaryExpression(OP_BI_MUL, $1, $3);
 	}
 	| sum_expression TDIV primary_expression {
-		// $$ = $1 / $3;
-		// TODO: new 一个二元运算的node
 		$$ = new ASTBinaryExpression(OP_BI_DIV, $1, $3);
 	}
 	| sum_expression TMOD primary_expression {
-		// $$ = $1 % $3;
-		// TODO: new 一个二元运算的node
 		$$ = new ASTBinaryExpression(OP_BI_MOD, $1, $3); 
 	}
 	;
@@ -353,8 +343,7 @@ assign_expression:
 	}
 	| array_with_index_name ASSIGN calculate_expression{
 		$$ = new ASTArrayAssign($1, $3);
-		// TODO: 实现索引节点 index = new ASTIndex($1, $3);
-		// TODO: 赋值节点 $$ = new ASTAssign($1, index);
+		std::cout << "++++++++++++++++++++++++++++++++" << std::endl;
 	}
 	;
 
