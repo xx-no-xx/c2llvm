@@ -149,7 +149,7 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   llvm::FunctionType* functype =
       llvm::FunctionType::get(astcontext->get_type(TYPE_VOID), false);
   // TODO: 当前创造了一个void() {}的函数
-
+  
   llvm::Function* func =
       llvm::Function::Create(functype, llvm::Function::ExternalLinkage,
                              this->get_name(), astcontext->current_m);
@@ -229,6 +229,14 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 }
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
+  //获取函数
+  llvm::Function *func = astcontext->current_m->getFunction(this->callee);
+  //构造参数
+  std::vector<llvm::Value* >putargs;
+  for (auto arg : this->args) 
+      putargs.push_back(arg->generate(astcontext));
+  //调用
+  llvm::Value* ret_value = astcontext->builder->CreateCall(func, putargs);
   // * 目前不考虑多个函数的情况
   return nullptr;
 }
