@@ -179,30 +179,31 @@ llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
 
 // 在函数原型部分，生成这个函数本身
 llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
-  llvm::FunctionType* functype =
-      llvm::FunctionType::get(astcontext->get_type(this->ret_type), false);
-  // TODO: 当前创造了一个void() {}的函数
-  llvm::Function* func =
-      llvm::Function::Create(functype, llvm::Function::ExternalLinkage,
-                             this->get_name(), astcontext->current_m);
-  // TODO: 函数参数
-  astcontext->current_f = func;  // 把当前函数更新到上下文
-
-  return func;
+  //函数返回类型
+  llvm::Type* returnType = astcontext->get_type(this->ret_type);
+  //函数参数类型
+  std::vector<llvm::Type *> funcArgs;
+  for(auto item : this->args)
+    funcArgs.push_back(astcontext->get_type(item));
+  //根据前两者构成函数类型
+  llvm::FunctionType *FT = llvm:: FunctionType::get(returnType, funcArgs, false);
+  //构造函数
+  astcontext->current_m->getOrInsertFunction(this->name, FT);
+  // 把当前函数更新到上下文
+  astcontext->current_f = astcontext->current_m->getFunction(this->name);  
+  return astcontext->current_f;
 }
 
 llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
-  auto func = astcontext->current_m->getFunction(
+  llvm::Function *func = astcontext->current_m->getFunction(
       this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
 
-  if (!func) {
-    this->prototype->generate(astcontext);  // 首先生成函数
-  }
+  if (!func) 
+      this->prototype->generate(astcontext);  // 首先生成函数
 
-  func = astcontext->current_f;  // 函数已经生成好了
-  if (!func) {
+  func = astcontext->current_m->getFunction(this->prototype->get_name());
+  if (!func) 
     return nullptr;
-  }
 
   // TODO: 符号表
   // TODO: astcontext->load_argument(); // 载入函数的参数
@@ -258,7 +259,7 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   //获取函数
-  llvm::Function* func = astcontext->current_m->getFunction(this->callee);
+  llvm::Function *func = astcontext->current_m->getFunction(this->callee);
   //异常处理
   if (!func) {
     std::cout << "Unknown Function referenced" << std::endl;
@@ -270,8 +271,9 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
     return nullptr;
   }
   //构造参数
-  std::vector<llvm::Value*> putargs;
-  for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
+  std::vector<llvm::Value* >putargs;
+  for (auto arg : this->args) 
+    putargs.push_back(arg->generate(astcontext));
   //调用
   return astcontext->builder->CreateCall(func, putargs);
 }

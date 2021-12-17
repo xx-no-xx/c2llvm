@@ -252,20 +252,21 @@ typedef std::string ARGname;          // 参数名称
 class ASTFunctionProto : public ASTPrototype {
   // 声明了一个形如ret_type name(args)的函数
  private:
-  int ret_type;  // TODO: 现在默认不返回东西
-  std::string name;
-  std::vector<std::pair<ARGdefine, ARGname>> args;  // ! ARGname 必须不一样
-  // TODO: 参数符号表，在push_codeblock中合
+  int ret_type;  // 返回类型
+  std::string name; // 函数名
+  std::vector<int> args; // 函数原型只需定义参数类型
 
  public:
   ASTFunctionProto(int _ret_type, std::string _name,
-                   std::vector<std::pair<ARGdefine, ARGname>> _args)
+                   std::vector<int> _args)
       : ret_type(_ret_type), name(_name), args(_args) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTFunctionProto"; }
   std::string get_name(void) { return name; }
   void debug(void) override {
-    // TODO: 展示参数
+    for (auto arg : args) 
+      std::cout << arg << " ";
+    std::cout << std::endl;
     std::cout << "Function Prototype Name: " << name << std::endl;
   }
 };
@@ -276,6 +277,7 @@ class ASTFunctionImp : public ASTExpression {
   ASTFunctionProto* prototype;
   ASTCodeBlockExpression* function_entry;
 
+  // TODO: 参数符号表，在push_codeblock中合
  public:
   ASTFunctionImp(ASTFunctionProto* _pro, ASTCodeBlockExpression* _entry)
       : prototype(_pro), function_entry(_entry) {}
