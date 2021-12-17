@@ -42,36 +42,40 @@ void test_ast(ASTContext* context) {
 
   // 造了一个左值变量
   auto x = new ASTVariableExpression("x");
-
-  // 将它定义出来，值为上述的加法表达式
-  auto defexp = new ASTVariableDefine(
-      TYPE_INT, x,
-      dynamic_cast<ASTExpression*>(integer2));  // int lhs = 100;
-
+  auto defexp = new ASTVariableDefine(TYPE_INT, x, nullptr);
   entry->append_code(defexp);
 
-  auto delexp = new ASTBinaryExpression(OP_BI_SUB, x, integer);
-  auto assexp = new ASTVariableAssign(x, delexp);
+  /*
+    // 将它定义出来，值为上述的加法表达式
+    auto defexp = new ASTVariableDefine(
+        TYPE_INT, x,
+        dynamic_cast<ASTExpression*>(integer2));  // int lhs = 100;
 
-  auto whilecode = new ASTCodeBlockExpression();
-  whilecode->append_code(assexp);
+    entry->append_code(defexp);
 
-  auto whileexp = new ASTWhileExpression(x, whilecode);
+    auto delexp = new ASTBinaryExpression(OP_BI_SUB, x, integer);
+    auto assexp = new ASTVariableAssign(x, delexp);
 
-  entry->append_code(whileexp);
+    auto whilecode = new ASTCodeBlockExpression();
+    whilecode->append_code(assexp);
 
-  auto assexp2 = new ASTVariableAssign(x, integer2);
+    auto whileexp = new ASTWhileExpression(x, whilecode);
 
-  auto preparecode = new ASTCodeBlockExpression();
-  preparecode->append_code(assexp2);
+    entry->append_code(whileexp);
 
-  auto actioncode = new ASTCodeBlockExpression();
-  actioncode->append_code(delexp);
+    auto assexp2 = new ASTVariableAssign(x, integer2);
 
-  auto forcode = new ASTCodeBlockExpression();
-  auto forexp = new ASTForExpression(x, forcode, preparecode, actioncode);
+    auto preparecode = new ASTCodeBlockExpression();
+    preparecode->append_code(assexp2);
 
-  entry->append_code(forexp);
+    auto actioncode = new ASTCodeBlockExpression();
+    actioncode->append_code(delexp);
+
+    auto forcode = new ASTCodeBlockExpression();
+    auto forexp = new ASTForExpression(x, forcode, preparecode, actioncode);
+
+
+    entry->append_code(forexp); */
   //  auto whileexp = new AST
 
   /* 下面是非常不好的实例 */

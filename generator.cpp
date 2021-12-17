@@ -19,14 +19,19 @@ llvm::Value* ASTContext::get_var(std::string var_name) {
   return symbol;
 }
 
-llvm::Value* ASTContext::create_local_var(int type, std::string var_name) {
+llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
+                                          int array_length) {
   if (codestack.empty()) {
     std::cout << "panic: empty code stack when creating" << std::endl;
     return nullptr;
   }
-  auto var =
-      builder->CreateAlloca(this->get_type(type), nullptr,
-                            var_name);  // 创造单个变量，所以ArraySize = nullptr
+  llvm::Value* alloctype = nullptr;
+  if (array_length > 0) {
+    alloctype = llvm::ConstantInt::get(get_type(TYPE_INT), array_length);
+  }
+  //  auto var = builder->CreateAlloca(this->get_type(type), nullptr, var_name);
+  //  // 创造单个变量，所以ArraySize = nullptr
+  auto var = builder->CreateAlloca(this->get_type(type), alloctype, var_name);
   codestack.top()->add_symbol(var_name, var);
   return var;
 }

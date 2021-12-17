@@ -52,7 +52,7 @@ class ASTContext {
   //  void load_argument();
   // TODO: 载入函数的参数
 
-  llvm::Value *create_local_var(int type, std::string);
+  llvm::Value *create_local_var(int type, std::string, int array_length = 0);
   // 创建一个局部变量。
   // 如果重名，返回nullptr;
 

@@ -189,6 +189,10 @@ class ASTVariableExpression : public ASTExpression {
       : name(_name), is_array(_is_array), array_length(_array_length) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_name(void) { return name; }
+  int get_array_length(void) {
+    if (is_array) return 0;
+    return array_length;
+  }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
   void debug(void) override { std::cout << "var:" << name << " "; }
 };
@@ -228,7 +232,10 @@ class ASTVariableDefine : public ASTPrototype {
     std::cout << "type:" << type << " ";
     lhs->debug();
     std::cout << " [ASSIGN FROM DEFINE]= ";
-    rhs->debug();
+    if (rhs)
+      rhs->debug();
+    else
+      std::cout << "none";
   }
 };
 
