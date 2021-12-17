@@ -358,11 +358,11 @@ assign_expression:
 
 for_assign_block:
 	assign_expression{
-		$$ = new ASTCodeBlockExpression();
- 		$$->append_code($1);
+	//	$$ = new ASTCodeBlockExpression();
+// 		$$->append_code($1);
 	}
 	for_assign_block TCOMMA assign_expression{
-		$1->append_code($1);
+		//$1->append_code($1);
 	}
 
 /* 变量类型 */

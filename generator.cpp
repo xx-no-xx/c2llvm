@@ -188,13 +188,8 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   llvm::Value* r_code = this->rhs->generate(astcontext);
 
   if (!l_code | !r_code) return nullptr;
-<<<<<<< HEAD
-=======
-
   if (l_code->getType() != r_code->getType())
     std::cout << "different type in binary expression" << std::endl;
-
->>>>>>> dc24b44f455e3dc79977fda870b59c9486cc038d
   if (this->operation == OP_BI_ADD) {
     auto inst = astcontext->builder->CreateAdd(
         l_code, r_code);  // 创造l_code + r_code 的 add
