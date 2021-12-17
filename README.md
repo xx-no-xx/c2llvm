@@ -1,5 +1,7 @@
 # c2llvm
 
+支持basic.c和basic2.c的语法
+
 __建议不要把lex和yacc输出的东西扔上来__
 
 ## 项目结构：
@@ -67,11 +69,17 @@ __运行compiler, 三种行为：__
 
 `./compiler test any_file_name.ll`: 输出test_ast生成的IR到对应的文件
 
+`./compiler gen any_file_name.c`: 解析该文件并生成ir
+
+`./compiler gen any_file_name.c file.ll`: 生成ir，到file.ll
+
 补充：使用`clang file.ll -o file`生成可执行文件
 
 main函数说明：
 
 `test_ast()`函数用来模拟AST的生成与IR的生成
+
+`test_gen()`函数:IR的生成
 
 `yyparse()`调用lex和yacc来解析输入，对应compiler.l和compiler.y。最后项目中，应该在这一步完成AST的构造。
 

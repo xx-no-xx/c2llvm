@@ -260,7 +260,8 @@ basic_expression:
 				number_str.push_back((*$1)[i]);
 			result = (char)atoi(number_str.c_str());
 		}
-		// TODO: $$ = new ASTCharExpression(result);
+		$$ = new ASTInteger(int(result));
+		// TODO: 是否有需要使用char的情况
 	}
 	| DOUBLE_CONSTANT {
 		// TODO: $$ = new ASTDoubleExpression($1);
