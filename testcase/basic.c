@@ -1,1 +1,5 @@
-{ int i; int j = 1; int k; i = 2; k = 3; i = j + k; j = i * 2; } 
+{
+  int a  = 1;
+  int b = 0;
+  if(a + b) {  }
+}

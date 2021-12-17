@@ -192,6 +192,10 @@ class ASTVariableExpression : public ASTExpression {
                         int _array_length = -1)
       : name(_name), is_array(_is_array), array_length(_array_length) {}
   llvm::Value* generate(ASTContext* astcontext) override;
+  void set_array(int len) {
+    array_length = len;
+    is_array = true;
+  }
   std::string get_name(void) { return name; }
   int get_array_length(void) {
     if (is_array == false) return 0;

@@ -44,6 +44,7 @@
 	ASTPrototype* statement; // 声明
 	ASTVariableDefine* variable_define; // 变量的定义，形如int x = 1;
 	ASTVariableExpression* identifier;	// 变量名
+	ASTArrayExpression* array_identifier;
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
 	std::string *char_value;	// char型的实际值
@@ -67,16 +68,18 @@
 // %token <xxx> 制定token从yylval.xxx获取
 
 // 非终结符
-%type <CodeBlock> entry areas area code_block loop_block condition_block for_block for_assign_block
+%type <CodeBlock> entry areas area code_block loop_block  for_block for_assign_block
 %type <function_proto> function_prototype // 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
+%type <array_identifier>  array_with_index_name // 形如x[i]的带索引数组变量
 %type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression 
 %type <expression> logic_expression logic_and_expression
 %type <expression> code_line assign_line
 %type <expression_list> code_lines
 %type <variable_define> var_defination
 %type <type> type_specifier
+%type <expression> condition_exp 
 // 表示这些非终结符，应该从哪里获取yylval
 
 %start entry // 最开始的规则
@@ -164,9 +167,10 @@ loop_block:
 	}
 
 // 条件块
-condition_block:
+condition_exp:
 	IF TLPAREN logic_expression TRPAREN code_block %prec LOWER_THAN_ELSE{
 		// TODO: $$ = new ASTIf($3, $5, nullptr);
+		$<expression>$ = new ASTIfExpression($3, $5);
 		std::cout << "get if_block without else" << std::endl;
 	}
 	| IF TLPAREN logic_expression TRPAREN code_block ELSE code_block{
@@ -201,8 +205,8 @@ code_line:
 	| loop_block{
 		$<CodeBlock>$ = $1;
 	}	// ???没有操作？疑惑
-	| condition_block{
-		$<CodeBlock>$ = $1;
+	| condition_exp{
+		$$ = $1;
 	}
 	;
 
@@ -230,11 +234,7 @@ var_defination:
 		$$ = new ASTVariableDefine($1, $2, $4);
 	}
 	| type_specifier var_name TLBRACKET INT_CONSTANT TRBRACKET SEMICOLON {
-		// 数组
-		// TODO: $2->is_array = true; 目前访问不到
-		// TODO: $2->array_length = INT_CONSTANT; 目前访问不到
 		$$ = new ASTVariableDefine($1, $2, nullptr);
-//		std::cout << "create array: " << *$1 << std::endl;
 	}
 	;
 
@@ -349,13 +349,19 @@ logic_and_expression:
 // 赋值式
 assign_expression:
 	var_name ASSIGN calculate_expression{
-		//TODO: 实现一个赋值运算的节点 $$ = new ASTAssign($1, $3);
+		$$ = new ASTVariableAssign($1, $3);
 	}
-	| var_name TLBRACKET calculate_expression TRBRACKET ASSIGN calculate_expression{
+	| array_with_index_name ASSIGN calculate_expression{
+		$$ = new ASTArrayAssign($1, $3);
 		// TODO: 实现索引节点 index = new ASTIndex($1, $3);
 		// TODO: 赋值节点 $$ = new ASTAssign($1, index);
 	}
 	;
+
+array_with_index_name:
+	IDENTIFIER TLBRACKET calculate_expression TRBRACKET {
+		$$ = new ASTArrayExpression(*$1, $3);
+	}
 
 for_assign_block:
 	assign_expression{

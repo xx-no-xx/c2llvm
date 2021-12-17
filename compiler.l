@@ -58,7 +58,6 @@ void save_value(std::string str);
 "{"         { save_type("TLBRACE"); return TLBRACE;}
 "}"         { save_type("TRBRACE"); return TRBRACE;}
 
-"\n"        { save_type("TCR"); return TCR;}
 ","         { save_type("TCOMMA"); return TCOMMA;}
 "."         { save_type("TDOT"); return TDOT;}
 ";" 		{ save_type("SEMICOLON"); return SEMICOLON; }  // 分号;

@@ -27,7 +27,7 @@ llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
   }
   if (array_length > 0) {
     auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
-    auto var = builder->CreateAlloca(alloctype);
+    auto var = builder->CreateAlloca(alloctype, nullptr, var_name);
     codestack.top()->add_symbol(var_name, var);
     return var;
   } else {
@@ -79,6 +79,7 @@ llvm::Value* ASTGeneralPrototype::generate(ASTContext* astcontext) {
 llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
   // 更新codeblock，每次只选择当前路径语句上可能的symboltable
   if (astcontext->current_f) {
+    std::cout << "start code block" << std::endl;
     this->entryBB = llvm::BasicBlock::Create(
         *(astcontext->context), "", astcontext->current_f,
         nullptr);  // 在这个函数的最后加入一个基本块
@@ -91,6 +92,7 @@ llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
 
     llvm::BasicBlock* now = this->entryBB;
     llvm::BasicBlock* nxt = nullptr;
+    std::cout << "gen code start" << std::endl;
     for (auto& code : this->codes) {
       code->generate(astcontext);  // retcode 是代码块最后的那一条命令
       nxt = astcontext->builder->GetInsertBlock();  // 为codeblock添加br跳转
@@ -107,11 +109,13 @@ llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
       }
       now = nxt;
     }
+    std::cout << "gen code end" << std::endl;
 
     if (!this->check_return()) {  // 如果当前ASTCodeBlock可以有后继，设置exitBB
       this->set_exit(astcontext->builder->GetInsertBlock());
     }
     astcontext->pop_codeblock();
+    std::cout << "end code block" << std::endl;
   } else {
     // TODO: 如果这个codeblock不属于任何函数，即全局变量的情况
   }
@@ -251,15 +255,16 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
 llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
   // todo: 对于a < b的条件特别判断？
   auto condori = this->condition->generate(astcontext);  // 原始condition
-
-  auto condfloat = astcontext->builder->CreateFPCast(
-      condori, llvm::Type::getFloatTy(*(astcontext->context)));  // 强转float
-
-  auto condinst = astcontext->builder->CreateFCmpONE(
-      condfloat,
-      llvm::ConstantFP::get(
-          llvm::Type::getFloatTy(*(astcontext->context)),  // 与0.0比较
-          float(0.0)));
+  llvm::Value* condinst;
+  if (condori->getType() == astcontext->get_type(TYPE_INT)) {
+    auto zero = llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(*(astcontext->context)), int(0));
+    condinst = astcontext->builder->CreateICmpNE(condori, zero);
+  } else if (condori->getType() == astcontext->get_type(TYPE_FLOAT)) {
+    auto zero = llvm::ConstantFP::get(
+        llvm::Type::getFloatTy(*(astcontext->context)), float(0.0));
+    condinst = astcontext->builder->CreateFCmpONE(condori, zero);
+  }
 
   auto ori = astcontext->builder->GetInsertBlock();
 
@@ -304,13 +309,16 @@ llvm::Value* ASTWhileExpression::generate(ASTContext* astcontext) {
   astcontext->builder->SetInsertPoint(ori);
 
   auto condori = this->condition->generate(astcontext);  // 原始condition
-  auto condfloat = astcontext->builder->CreateFPCast(
-      condori, llvm::Type::getFloatTy(*(astcontext->context)));  // 强转float
-  auto condinst = astcontext->builder->CreateFCmpONE(
-      condfloat,
-      llvm::ConstantFP::get(
-          llvm::Type::getFloatTy(*(astcontext->context)),  // 与0.0比较
-          float(0.0)));
+  llvm::Value* condinst;
+  if (condori->getType() == astcontext->get_type(TYPE_INT)) {
+    auto zero = llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(*(astcontext->context)), int(0));
+    condinst = astcontext->builder->CreateICmpNE(condori, zero);
+  } else if (condori->getType() == astcontext->get_type(TYPE_FLOAT)) {
+    auto zero = llvm::ConstantFP::get(
+        llvm::Type::getFloatTy(*(astcontext->context)), float(0.0));
+    condinst = astcontext->builder->CreateFCmpONE(condori, zero);
+  }
 
   this->code->generate(astcontext);
   astcontext->builder->SetInsertPoint(ori);
@@ -346,13 +354,16 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
   astcontext->builder->SetInsertPoint(stBB);
 
   auto condori = this->condition->generate(astcontext);  // 原始condition
-  auto condfloat = astcontext->builder->CreateFPCast(
-      condori, llvm::Type::getFloatTy(*(astcontext->context)));  // 强转float
-  auto condinst = astcontext->builder->CreateFCmpONE(
-      condfloat,
-      llvm::ConstantFP::get(
-          llvm::Type::getFloatTy(*(astcontext->context)),  // 与0.0比较
-          float(0.0)));
+  llvm::Value* condinst;
+  if (condori->getType() == astcontext->get_type(TYPE_INT)) {
+    auto zero = llvm::ConstantInt::get(
+        llvm::Type::getInt32Ty(*(astcontext->context)), int(0));
+    condinst = astcontext->builder->CreateICmpNE(condori, zero);
+  } else if (condori->getType() == astcontext->get_type(TYPE_FLOAT)) {
+    auto zero = llvm::ConstantFP::get(
+        llvm::Type::getFloatTy(*(astcontext->context)), float(0.0));
+    condinst = astcontext->builder->CreateFCmpONE(condori, zero);
+  }
 
   this->code->generate(astcontext);
 
