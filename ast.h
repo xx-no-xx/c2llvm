@@ -179,8 +179,7 @@ class ASTVariableExpression : public ASTExpression {
   // 对应了一个表达式的左值, 一个变量，例如a
  private:
   std::string name;
-  // TODO: 对于数组应该另外处理
-  bool is_array;     // TODO： 这个表达式可能是个数组本身。
+  bool is_array;     // 它是否是数组
   int array_length;  // 数组的长度
 
  public:
@@ -410,6 +409,44 @@ class ASTForExpression : public ASTExpression {
     code->debug();
     std::cout << " }";
     std::cout << "[END FOR]";
+  }
+};
+
+class ASTArrayExpression : public ASTExpression {
+  // 对应name[index]的数组元素
+ private:
+  std::string name;
+  ASTExpression* index;
+
+ public:
+  ASTArrayExpression(std::string _name, ASTExpression* _index)
+      : name(_name), index(_index) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  llvm::Value* generate_ptr(ASTContext* astcontext);
+  std::string get_name(void) { return name; }
+  std::string get_class_name(void) override { return "ASTArrayExpression"; }
+  void debug(void) override {
+    std::cout << "array_var:" << name << "[ ";
+    index->debug();
+    std::cout << " ]";
+  }
+};
+
+class ASTArrayAssign : public ASTExpression {
+  // 对应name[index]的数组元素
+ private:
+  ASTArrayExpression* lhs;
+  ASTExpression* rhs;
+
+ public:
+  ASTArrayAssign(ASTArrayExpression* _lhs, ASTExpression* _rhs)
+      : lhs(_lhs), rhs(_rhs) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTArrayAssign"; }
+  void debug(void) override {
+    lhs->debug();
+    std::cout << "[assign] = ";
+    rhs->debug();
   }
 };
 

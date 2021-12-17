@@ -25,15 +25,18 @@ llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
     std::cout << "panic: empty code stack when creating" << std::endl;
     return nullptr;
   }
-  llvm::Value* alloctype = nullptr;
+  array_length = 4;
   if (array_length > 0) {
-    alloctype = llvm::ConstantInt::get(get_type(TYPE_INT), array_length);
+    auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
+    auto var = builder->CreateAlloca(alloctype);
+    codestack.top()->add_symbol(var_name, var);
+    return var;
+  } else {
+    // 创造单个变量，所以ArraySize = nullptr
+    auto var = builder->CreateAlloca(this->get_type(type), nullptr, var_name);
+    codestack.top()->add_symbol(var_name, var);
+    return var;
   }
-  //  auto var = builder->CreateAlloca(this->get_type(type), nullptr, var_name);
-  //  // 创造单个变量，所以ArraySize = nullptr
-  auto var = builder->CreateAlloca(this->get_type(type), alloctype, var_name);
-  codestack.top()->add_symbol(var_name, var);
-  return var;
 }
 
 llvm::Type* ASTContext::get_type(int type) {
@@ -205,7 +208,7 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   // * 目前不考虑多个函数的情况
   return nullptr;
 }
-
+// todo: 操纵codeblock的实现顺序，导致codeblock中的符号表迁移异常？
 llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
   // todo: 对于a < b的条件特别判断？
   auto condori = this->condition->generate(astcontext);  // 原始condition
@@ -332,4 +335,19 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
   }
   astcontext->builder->SetInsertPoint(edBB);
   return brinst;
+}
+
+llvm::Value* ASTArrayExpression::generate(ASTContext* astcontext) {
+  return nullptr;
+}
+
+llvm::Value* ASTArrayExpression::generate_ptr(ASTContext* astcontext) {
+  auto var = astcontext->get_var(get_name());
+  auto indexexp = index->generate(astcontext);
+  //  auto ptr = astcontext->builder->CreateExtractValue(var, indexexp, "");
+  return nullptr;
+}
+
+llvm::Value* ASTArrayAssign::generate(ASTContext* astcontext) {
+  return nullptr;
 }
