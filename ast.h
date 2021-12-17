@@ -54,6 +54,7 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_DOUBLE 2
 #define TYPE_CHAR 3
 #define TYPE_FLOAT 4
+#define TYPE_BOOL 5
 
 // [二元]运算符Define
 #define OP_BI_ADD 0
@@ -68,6 +69,7 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_OR 9   // 逻辑
 #define OP_BI_MOD 10
 #define OP_BI_EQ 11
+#define OP_BI_NEQ 12
 
 extern ASTCodeBlockExpression* entryCodeBlock;
 
@@ -252,20 +254,18 @@ typedef std::string ARGname;          // 参数名称
 class ASTFunctionProto : public ASTPrototype {
   // 声明了一个形如ret_type name(args)的函数
  private:
-  int ret_type;  // 返回类型
-  std::string name; // 函数名
-  std::vector<int> args; // 函数原型只需定义参数类型
+  int ret_type;           // 返回类型
+  std::string name;       // 函数名
+  std::vector<int> args;  // 函数原型只需定义参数类型
 
  public:
-  ASTFunctionProto(int _ret_type, std::string _name,
-                   std::vector<int> _args)
+  ASTFunctionProto(int _ret_type, std::string _name, std::vector<int> _args)
       : ret_type(_ret_type), name(_name), args(_args) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTFunctionProto"; }
   std::string get_name(void) { return name; }
   void debug(void) override {
-    for (auto arg : args) 
-      std::cout << arg << " ";
+    for (auto arg : args) std::cout << arg << " ";
     std::cout << std::endl;
     std::cout << "Function Prototype Name: " << name << std::endl;
   }

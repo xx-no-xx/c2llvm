@@ -69,6 +69,8 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getFloatTy(*(this->context));
   } else if (type == TYPE_FLOAT) {
     return llvm::Type::getFloatTy(*(this->context));
+  } else if (type == TYPE_BOOL) {
+    return llvm::Type::getInt1Ty(*(this->context));
   }
   return nullptr;
 }
@@ -182,28 +184,25 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   //函数返回类型
   llvm::Type* returnType = astcontext->get_type(this->ret_type);
   //函数参数类型
-  std::vector<llvm::Type *> funcArgs;
-  for(auto item : this->args)
-    funcArgs.push_back(astcontext->get_type(item));
+  std::vector<llvm::Type*> funcArgs;
+  for (auto item : this->args) funcArgs.push_back(astcontext->get_type(item));
   //根据前两者构成函数类型
-  llvm::FunctionType *FT = llvm:: FunctionType::get(returnType, funcArgs, false);
+  llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, false);
   //构造函数
   astcontext->current_m->getOrInsertFunction(this->name, FT);
   // 把当前函数更新到上下文
-  astcontext->current_f = astcontext->current_m->getFunction(this->name);  
+  astcontext->current_f = astcontext->current_m->getFunction(this->name);
   return astcontext->current_f;
 }
 
 llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
-  llvm::Function *func = astcontext->current_m->getFunction(
+  llvm::Function* func = astcontext->current_m->getFunction(
       this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
 
-  if (!func) 
-      this->prototype->generate(astcontext);  // 首先生成函数
+  if (!func) this->prototype->generate(astcontext);  // 首先生成函数
 
   func = astcontext->current_m->getFunction(this->prototype->get_name());
-  if (!func) 
-    return nullptr;
+  if (!func) return nullptr;
 
   // TODO: 符号表
   // TODO: astcontext->load_argument(); // 载入函数的参数
@@ -221,45 +220,85 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   llvm::Value* r_code = this->rhs->generate(astcontext);
 
   if (!l_code | !r_code) return nullptr;
-  if (l_code->getType() != r_code->getType())
-    std::cout << "different type in binary expression" << std::endl;
-  if (this->operation == OP_BI_ADD) {
-    auto inst = astcontext->builder->CreateAdd(
-        l_code, r_code);  // 创造l_code + r_code 的 add
-    return inst;
-  } else if (this->operation == OP_BI_SUB) {
-    auto inst = astcontext->builder->CreateSub(
-        l_code, r_code);  // 创造l_code + r_code 的 add
-    return inst;
-  } else if (this->operation == OP_BI_MUL) {
-    auto inst = astcontext->builder->CreateMul(
-        l_code, r_code);  // 创造l_code + r_code 的 add
-    return inst;
-  } else if (this->operation == OP_BI_DIV) {
-    // TODO: 默认sdiv, 应该是有符号除法
-    auto inst = astcontext->builder->CreateSDiv(
-        l_code, r_code);  // 创造l_code + r_code 的 add
-    return inst;
-  } else if (this->operation == OP_BI_LESS) {
-    if (r_code->getType() == astcontext->get_type(TYPE_INT)) {
-      /* also for TYPE_CHAR */
-      auto inst = astcontext->builder->CreateICmpSLT(l_code, r_code);
-      return inst;
-    } else if (r_code->getType() == astcontext->get_type(TYPE_FLOAT)) {
-      /* also for TYPE_DOUBLE */
-      auto inst = astcontext->builder->CreateFCmpOLT(l_code, r_code);
-      return inst;
+
+  if (this->operation == OP_BI_AND) {
+    // * 逻辑与
+    auto lef = astcontext->generate_condition(l_code);
+    auto rig = astcontext->generate_condition(r_code);
+    return astcontext->builder->CreateAnd(lef, rig);
+  } else if (this->operation == OP_BI_OR) {
+    // * 逻辑或
+    auto lef = astcontext->generate_condition(l_code);
+    auto rig = astcontext->generate_condition(r_code);
+    return astcontext->builder->CreateOr(lef, rig);
+  } else {
+    if (r_code->getType() == l_code->getType()) {
+      // * 非根据类型不同
+      if (this->operation == OP_BI_ADD) {
+        return astcontext->builder->CreateAdd(l_code, r_code);  // 加法
+      } else if (this->operation == OP_BI_SUB) {
+        return astcontext->builder->CreateSub(l_code, r_code);  // 减法
+      } else if (this->operation == OP_BI_MUL) {
+        return astcontext->builder->CreateMul(l_code, r_code);  // 乘法
+      } else if (this->operation == OP_BI_DIV) {
+        return astcontext->builder->CreateSDiv(l_code, r_code);  // 有符号除法
+      } else {
+        // * 根据类型不同
+        if (r_code->getType() == astcontext->get_type(TYPE_INT)) {
+          // * also for TYPE_CHAR
+          if (this->operation == OP_BI_LESS)
+            return astcontext->builder->CreateICmpSLT(l_code, r_code);
+          else if (this->operation == OP_BI_MORE)
+            return astcontext->builder->CreateICmpSGT(l_code, r_code);
+          else if (this->operation == OP_BI_LESSEQ)
+            return astcontext->builder->CreateICmpSLE(l_code, r_code);
+          else if (this->operation == OP_BI_MOREEQ)
+            return astcontext->builder->CreateICmpSGE(l_code, r_code);
+          else if (this->operation == OP_BI_EQ)
+            return astcontext->builder->CreateICmpEQ(l_code, r_code);
+          else if (this->operation == OP_BI_NEQ)
+            return astcontext->builder->CreateICmpNE(l_code, r_code);
+          else if (this->operation == OP_BI_MOD) {
+            auto res = astcontext->builder->CreateSDiv(l_code, r_code);
+            // res = l_code / r_code
+            return astcontext->builder->CreateSub(l_code, res);
+            // inst = l_code - l_code / r_code
+          }
+        } else if (r_code->getType() == astcontext->get_type(TYPE_FLOAT)) {
+          // * also for TYPE_DOUBLE
+          if (this->operation == OP_BI_LESS)
+            return astcontext->builder->CreateFCmpOLT(l_code, r_code);
+          else if (this->operation == OP_BI_MORE)
+            return astcontext->builder->CreateFCmpOGT(l_code, r_code);
+          else if (this->operation == OP_BI_LESSEQ)
+            return astcontext->builder->CreateFCmpOLE(l_code, r_code);
+          else if (this->operation == OP_BI_MOREEQ)
+            return astcontext->builder->CreateFCmpOGE(l_code, r_code);
+          else if (this->operation == OP_BI_EQ)
+            return astcontext->builder->CreateFCmpOEQ(l_code, r_code);
+          else if (this->operation == OP_BI_NEQ)
+            return astcontext->builder->CreateFCmpONE(l_code, r_code);
+        } else if (r_code->getType() == astcontext->get_type(TYPE_BOOL)) {
+          if (this->operation == OP_BI_EQ)
+            return astcontext->builder->CreateICmpEQ(l_code, r_code);
+          else if (this->operation == OP_BI_NEQ)
+            return astcontext->builder->CreateICmpNE(l_code, r_code);
+        }
+      }
+      std::cout << "panic: not allowed type" << std::endl;
+      exit(0);
     } else {
-      std::cout << "panic: not allowed var type" << std::endl;
+      std::cout << "panic: different type when not logic expression"
+                << std::endl;
+      exit(0);
     }
   }
-  // TODO 其他运算情况
   return nullptr;
 }
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   //获取函数
-  llvm::Function *func = astcontext->current_m->getFunction(this->callee);
+  llvm::Function* func = astcontext->current_m->getFunction(this->callee);
   //异常处理
   if (!func) {
     std::cout << "Unknown Function referenced" << std::endl;
@@ -271,9 +310,8 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
     return nullptr;
   }
   //构造参数
-  std::vector<llvm::Value* >putargs;
-  for (auto arg : this->args) 
-    putargs.push_back(arg->generate(astcontext));
+  std::vector<llvm::Value*> putargs;
+  for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
   //调用
   return astcontext->builder->CreateCall(func, putargs);
 }
@@ -335,7 +373,8 @@ llvm::Value* ASTWhileExpression::generate(ASTContext* astcontext) {
                                        astcontext->current_f);  // 设置while循环
 
   auto brinst = astcontext->builder->CreateCondBr(
-      condinst, this->code->entryBB, edBB);  // 设置到if/else基本块开头的branch
+      condinst, this->code->entryBB,
+      edBB);  // 设置到if/else基本块开头的branch
 
   if (!this->code->check_return()) {
     astcontext->builder->SetInsertPoint(
@@ -347,8 +386,6 @@ llvm::Value* ASTWhileExpression::generate(ASTContext* astcontext) {
 }
 
 llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
-  // todo: 对于a < b的条件特别判断？
-
   auto lst = astcontext->builder->GetInsertBlock();
   this->prepare->generate(astcontext);
   astcontext->builder->SetInsertPoint(lst);  // 从last -> prepare
