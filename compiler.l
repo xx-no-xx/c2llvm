@@ -108,8 +108,8 @@ void save_value(std::string str);
 */
 
 // save_type: 保存这个变量的类型，到yylval.type
+// 	yylval.type = new std::string(str);
 void save_type(std::string str) {
-	yylval.type = new std::string(str);
 	return;
 }
 

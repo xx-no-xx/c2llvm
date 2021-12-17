@@ -1,0 +1,1 @@
+{ int i; int j = 1; int k; i = 2; k = 3; i = j + k; j = i * 2; } 

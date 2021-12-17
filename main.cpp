@@ -1,3 +1,7 @@
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -14,6 +18,7 @@
 
 using namespace std;
 
+extern FILE* yyin;
 extern int yyparse();  // yacc & lex 以分析现有的文件
 // extern entry* entry;
 // extern ASTCodeBlockExpression* entry;
@@ -144,6 +149,23 @@ void test_ast(ASTContext* context) {
   /* --------------------------------------------------------------- */
 }
 
+void test_gen(ASTContext* context) {
+  // 造一个空的函数参数列表
+  std::vector<std::pair<ARGdefine, ARGname>> args;
+  args.clear();
+
+  // 造一个函数原型
+  auto funcproto = new ASTFunctionProto(TYPE_VOID, "main", args);
+
+  // 造一个真正的函数实现
+  auto funcimp = new ASTFunctionImp(funcproto, entryCodeBlock);
+  entryCodeBlock->debug();
+
+  //  funcimp->debug();
+
+  funcimp->generate(context);  // 生成函数的代码
+}
+
 int main(int argc, char** argv) {
   if (argc <= 1) {
     std::cout << "panic: no argument" << std::endl;
@@ -166,6 +188,33 @@ int main(int argc, char** argv) {
       llvm::raw_fd_ostream dest(argv[2], EC, llvm::sys::fs::OF_None);
       context->current_m->print(dest, nullptr);
     }
+  } else if (strcmp(argv[1], "gen") == 0) {
+    if (argc <= 2) {
+      std::cout << "panic: no input" << std::endl;
+      exit(0);
+    }
+
+    yyin = fopen(argv[2], "r");
+    if (!yyin) {
+      std::cout << "panic: wrong input" << std::endl;
+      exit(0);
+    }
+    yyparse();
+
+    auto context = new ASTContext();
+    auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+    context->current_m->setTargetTriple(TargetTriple);  // 生成目标平台的信息
+
+    test_gen(context);
+
+    if (argc <= 3) {
+      context->current_m->print(llvm::errs(), nullptr);  // 输出测试
+    } else {
+      std::error_code EC;
+      llvm::raw_fd_ostream dest(argv[3], EC, llvm::sys::fs::OF_None);
+      context->current_m->print(dest, nullptr);
+    }
+
   } else {
     std::cout << "panic: invalid argument" << std::endl;
   }

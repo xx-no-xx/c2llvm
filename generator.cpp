@@ -77,35 +77,45 @@ llvm::Value* ASTGeneralPrototype::generate(ASTContext* astcontext) {
 }
 
 llvm::Value* ASTCodeBlockExpression::generate(ASTContext* astcontext) {
-  llvm::Value* retcode = nullptr;  // 认为它什么也不返回
-  astcontext->push_codeblock(
-      this);  // 更新codeblock，每次只选择当前路径语句上可能的symboltable
+  // 更新codeblock，每次只选择当前路径语句上可能的symboltable
+  if (astcontext->current_f) {
+    this->entryBB = llvm::BasicBlock::Create(
+        *(astcontext->context), "", astcontext->current_f,
+        nullptr);  // 在这个函数的最后加入一个基本块
 
-  // TODO: 如果这个codeblock不属于任何函数，即全局变量的情况
+    // 在制造entryBB后，通过该BB的函数信息，获取可行的符号表
+    astcontext->push_codeblock(this);
 
-  this->entryBB = llvm::BasicBlock::Create(
-      *(astcontext->context), "",
-      astcontext->current_f);  // 在这个函数的最后加入一个基本块
+    astcontext->builder->SetInsertPoint(this->entryBB);
+    // 设置IRBuilder在这个基本块上运行
 
-  astcontext->builder->SetInsertPoint(
-      this->entryBB);  // 设置IRBuilder在这个基本块上运行
-
-  // TODO: 处理参数
-
-  this->debug();
-  for (auto& code : this->codes) {
-    code->generate(astcontext);  // retcode 是代码块最后的那一条命令
-    if (code->check_return()) {
-      this->set_return();
-      break;
+    llvm::BasicBlock* now = this->entryBB;
+    llvm::BasicBlock* nxt = nullptr;
+    for (auto& code : this->codes) {
+      code->generate(astcontext);  // retcode 是代码块最后的那一条命令
+      nxt = astcontext->builder->GetInsertBlock();  // 为codeblock添加br跳转
+      if (code->get_class_name() == "ASTCodeBlockExpression") {
+        ASTCodeBlockExpression* block = (ASTCodeBlockExpression*)code;
+        // ! 危险的操作，或许需要更好的实现方法, 例如虚函数
+        astcontext->builder->SetInsertPoint(now);
+        astcontext->builder->CreateBr(block->entryBB);
+        astcontext->builder->SetInsertPoint(block->exitBB);
+      }
+      if (code->check_return()) {
+        this->set_return();
+        break;
+      }
+      now = nxt;
     }
-  }
 
-  if (!this->check_return()) {  // 如果当前ASTCodeBlock可以有后继，设置exitBB
-    this->set_exit(astcontext->builder->GetInsertBlock());
+    if (!this->check_return()) {  // 如果当前ASTCodeBlock可以有后继，设置exitBB
+      this->set_exit(astcontext->builder->GetInsertBlock());
+    }
+    astcontext->pop_codeblock();
+  } else {
+    // TODO: 如果这个codeblock不属于任何函数，即全局变量的情况
   }
-  astcontext->pop_codeblock();
-  return retcode;
+  return nullptr;
 }
 
 // 生成某个常数
@@ -149,6 +159,10 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   llvm::FunctionType* functype =
       llvm::FunctionType::get(astcontext->get_type(this->ret_type), false);
   // TODO: 当前创造了一个void() {}的函数
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a0bd1a39b9ed422e3257415a674e5a80a9fe201
   llvm::Function* func =
       llvm::Function::Create(functype, llvm::Function::ExternalLinkage,
                              this->get_name(), astcontext->current_m);
@@ -227,6 +241,7 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   //获取函数
+<<<<<<< HEAD
   llvm::Function *func = astcontext->current_m->getFunction(this->callee);
   //异常处理
   if (!func) {
@@ -242,6 +257,12 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   std::vector<llvm::Value* >putargs;
   for (auto arg : this->args) 
     putargs.push_back(arg->generate(astcontext));
+=======
+  llvm::Function* func = astcontext->current_m->getFunction(this->callee);
+  //构造参数
+  std::vector<llvm::Value*> putargs;
+  for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
+>>>>>>> 4a0bd1a39b9ed422e3257415a674e5a80a9fe201
   //调用
   return astcontext->builder->CreateCall(func, putargs);
 }

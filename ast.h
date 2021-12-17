@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-
 // 环境
 class ASTContext;  // 用于存储当前语法分析树的上下文信息
 
@@ -56,8 +55,6 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_CHAR 3
 #define TYPE_FLOAT 4
 
-
-
 // [二元]运算符Define
 #define OP_BI_ADD 0
 #define OP_BI_SUB 1
@@ -67,8 +64,8 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_MORE 5
 #define OP_BI_LESSEQ 6
 #define OP_BI_MOREEQ 7
-#define OP_BI_AND 8 // 逻辑
-#define OP_BI_OR 9 // 逻辑
+#define OP_BI_AND 8  // 逻辑
+#define OP_BI_OR 9   // 逻辑
 #define OP_BI_MOD 10
 #define OP_BI_EQ 11
 
@@ -158,7 +155,7 @@ class ASTCodeBlockExpression : public ASTExpression {
     }
     return exitBB;
   }
-  void copy_symbol_from(ASTCodeBlockExpression* codeblock);
+  void copy_symbol_from(std::map<std::string, llvm::Value*> table);
   std::map<std::string, llvm::Value*> get_symboltable(void) {
     return this->symboltable;
   }  // 获取符号表
@@ -254,6 +251,7 @@ class ASTFunctionProto : public ASTPrototype {
   int ret_type;  // TODO: 现在默认不返回东西
   std::string name;
   std::vector<std::pair<ARGdefine, ARGname>> args;  // ! ARGname 必须不一样
+  // TODO: 参数符号表，在push_codeblock中合
 
  public:
   ASTFunctionProto(int _ret_type, std::string _name,

@@ -26,18 +26,26 @@ class ASTContext {
   llvm::Module *current_m;  // 当前所在的module，大概可以理解为当前程序
   llvm::Function *current_f;
 
+  std::map<std::string, llvm::Value *> global_symboltable;
+  // TODO: 全局符号表
+
   ASTContext() {
     context = new llvm::LLVMContext();
     current_m = new llvm::Module("foo_module", *context);
     builder = new llvm::IRBuilder<>(*context);
     current_f = nullptr;
+    global_symboltable.clear();
     std::cout << "AST Context made" << std::endl;
   }
 
-  void push_codeblock(
-      ASTCodeBlockExpression *codeblock) {  // 加入代码块，并复制已有的符号表
-    if (!codestack.empty()) {
-      codeblock->copy_symbol_from(codestack.top());
+  void push_codeblock(ASTCodeBlockExpression *codeblock) {
+    // 加入代码块，并复制已有的符号表
+    if (!codestack.empty() && codeblock->entryBB->getParent() ==
+                                  codestack.top()->entryBB->getParent()) {
+      codeblock->copy_symbol_from(codestack.top()->get_symboltable());
+    } else {
+      codeblock->copy_symbol_from(global_symboltable);
+      // TODO: 载入函数参数的符号表
     }
     codestack.push(codeblock);
   }
@@ -45,8 +53,6 @@ class ASTContext {
   ASTCodeBlockExpression *get_codestack_top(void) {
     return codestack.top();
   };  // 获取最新（当前的代码块）
-
-  // TODO: 支持全局变量/支持多函数
 
   void clear_symboltable(void);
   //  void load_argument();
