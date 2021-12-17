@@ -3,6 +3,7 @@
 #define C2LLVM_AST_HPP
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
 #include <map>
