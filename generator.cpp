@@ -113,7 +113,8 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
   auto var = astcontext->get_codestack_top()->get_symbol(
       this->get_name());  // 获取符号表
-  auto var_load_name = var->getName() + llvm::Twine("_load");  // 取名为xxx_load
+  auto var_load_name =
+      var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
   auto var_load = astcontext->builder->CreateLoad(
       var->getType()->getPointerElementType(), var,
       var_load_name);  // 将它load为右值 xxx_load = load xxx
@@ -338,16 +339,32 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
 }
 
 llvm::Value* ASTArrayExpression::generate(ASTContext* astcontext) {
-  return nullptr;
+  auto ptr = this->generate_ptr(astcontext);
+  auto var_load = astcontext->builder->CreateLoad(
+      ptr->getType()->getPointerElementType(), ptr,
+      "");  // 将它load为右值 xxx_load = load xxx
+  return var_load;
 }
 
 llvm::Value* ASTArrayExpression::generate_ptr(ASTContext* astcontext) {
+  auto realindex = index->generate(astcontext);
+
+  llvm::SmallVector<llvm::Value*, 2> index_vec;
+  auto off = new ASTInteger(0);
+  index_vec.push_back(off->generate(astcontext));
+  index_vec.push_back(realindex);
+
   auto var = astcontext->get_var(get_name());
-  auto indexexp = index->generate(astcontext);
-  //  auto ptr = astcontext->builder->CreateExtractValue(var, indexexp, "");
-  return nullptr;
+  auto ptr = astcontext->builder->CreateGEP(
+      var->getType()->getPointerElementType(), var, index_vec,
+      "");  // create get element pointer
+  return ptr;
 }
 
 llvm::Value* ASTArrayAssign::generate(ASTContext* astcontext) {
-  return nullptr;
+  auto var = this->lhs->generate_ptr(astcontext);
+  llvm::errs() << *var << "\n";
+  auto assign =
+      astcontext->builder->CreateStore(this->rhs->generate(astcontext), var);
+  return assign;
 }

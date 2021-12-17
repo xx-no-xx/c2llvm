@@ -33,17 +33,29 @@ void test_ast(ASTContext* context) {
   auto funcimp = new ASTFunctionImp(funcproto, entry);
 
   // 如果碰到了一个纯粹的数字:
-  int value = 100;
+  int value = 1;
   auto integer = new ASTInteger(value);
   // 和另一个纯的数字:
 
   int value2 = 200;
   auto integer2 = new ASTInteger(value2);
 
+  auto integer3 = new ASTInteger(2);
+
   // 造了一个左值变量
-  auto x = new ASTVariableExpression("x");
+  auto x = new ASTVariableExpression("x", true, 10);
   auto defexp = new ASTVariableDefine(TYPE_INT, x, nullptr);
   entry->append_code(defexp);
+
+  auto x1 = new ASTArrayExpression("x", integer);  // x[1]
+
+  auto assexp = new ASTArrayAssign(x1, integer2);  // x[1] = 200;
+  entry->append_code(assexp);
+
+  auto x2 = new ASTArrayExpression("x", integer3);  // x[1]
+  auto ass2exp = new ASTArrayAssign(x2, x1);
+
+  entry->append_code(ass2exp);
 
   /*
     // 将它定义出来，值为上述的加法表达式
