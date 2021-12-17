@@ -10,6 +10,25 @@
 // # //  }
 // # }
 
+llvm::Value* ASTContext::generate_condition(llvm::Value* condori) {
+  llvm::Value* condinst;
+  if (condori->getType() == get_type(TYPE_INT)) {
+    auto zero =
+        llvm::ConstantInt::get(llvm::Type::getInt32Ty(*(context)), int(0));
+    condinst = builder->CreateICmpNE(condori, zero);
+  } else if (condori->getType() == get_type(TYPE_FLOAT)) {
+    auto zero =
+        llvm::ConstantFP::get(llvm::Type::getFloatTy(*(context)), float(0.0));
+    condinst = builder->CreateFCmpONE(condori, zero);
+  } else if (condori->getType() == llvm::Type::getInt1Ty(*context)) {
+    condinst = condori;
+  } else {
+    std::cout << "panic: wrong condition type" << std::endl;
+    exit(0);
+  }
+  return condinst;
+}
+
 llvm::Value* ASTContext::get_var(std::string var_name) {
   if (codestack.empty()) {
     std::cout << "panic: empty code stack when getting" << std::endl;
@@ -163,10 +182,6 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   llvm::FunctionType* functype =
       llvm::FunctionType::get(astcontext->get_type(this->ret_type), false);
   // TODO: 当前创造了一个void() {}的函数
-<<<<<<< HEAD
-=======
-
->>>>>>> 4a0bd1a39b9ed422e3257415a674e5a80a9fe201
   llvm::Function* func =
       llvm::Function::Create(functype, llvm::Function::ExternalLinkage,
                              this->get_name(), astcontext->current_m);
@@ -245,21 +260,20 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   //获取函数
-  llvm::Function *func = astcontext->current_m->getFunction(this->callee);
+  llvm::Function* func = astcontext->current_m->getFunction(this->callee);
   //异常处理
   if (!func) {
     std::cout << "Unknown Function referenced" << std::endl;
     return nullptr;
   }
-  
-  if (func->arg_size() != this->args.size()){
+
+  if (func->arg_size() != this->args.size()) {
     std::cout << "Incorrect # arguments passed" << std::endl;
     return nullptr;
   }
   //构造参数
-  std::vector<llvm::Value* >putargs;
-  for (auto arg : this->args) 
-    putargs.push_back(arg->generate(astcontext));
+  std::vector<llvm::Value*> putargs;
+  for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
   //调用
   return astcontext->builder->CreateCall(func, putargs);
 }
@@ -267,16 +281,7 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
 llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
   // todo: 对于a < b的条件特别判断？
   auto condori = this->condition->generate(astcontext);  // 原始condition
-  llvm::Value* condinst;
-  if (condori->getType() == astcontext->get_type(TYPE_INT)) {
-    auto zero = llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(*(astcontext->context)), int(0));
-    condinst = astcontext->builder->CreateICmpNE(condori, zero);
-  } else if (condori->getType() == astcontext->get_type(TYPE_FLOAT)) {
-    auto zero = llvm::ConstantFP::get(
-        llvm::Type::getFloatTy(*(astcontext->context)), float(0.0));
-    condinst = astcontext->builder->CreateFCmpONE(condori, zero);
-  }
+  auto condinst = astcontext->generate_condition(condori);
 
   auto ori = astcontext->builder->GetInsertBlock();
 
@@ -321,16 +326,7 @@ llvm::Value* ASTWhileExpression::generate(ASTContext* astcontext) {
   astcontext->builder->SetInsertPoint(ori);
 
   auto condori = this->condition->generate(astcontext);  // 原始condition
-  llvm::Value* condinst;
-  if (condori->getType() == astcontext->get_type(TYPE_INT)) {
-    auto zero = llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(*(astcontext->context)), int(0));
-    condinst = astcontext->builder->CreateICmpNE(condori, zero);
-  } else if (condori->getType() == astcontext->get_type(TYPE_FLOAT)) {
-    auto zero = llvm::ConstantFP::get(
-        llvm::Type::getFloatTy(*(astcontext->context)), float(0.0));
-    condinst = astcontext->builder->CreateFCmpONE(condori, zero);
-  }
+  auto condinst = astcontext->generate_condition(condori);
 
   this->code->generate(astcontext);
   astcontext->builder->SetInsertPoint(ori);
@@ -366,16 +362,8 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
   astcontext->builder->SetInsertPoint(stBB);
 
   auto condori = this->condition->generate(astcontext);  // 原始condition
-  llvm::Value* condinst;
-  if (condori->getType() == astcontext->get_type(TYPE_INT)) {
-    auto zero = llvm::ConstantInt::get(
-        llvm::Type::getInt32Ty(*(astcontext->context)), int(0));
-    condinst = astcontext->builder->CreateICmpNE(condori, zero);
-  } else if (condori->getType() == astcontext->get_type(TYPE_FLOAT)) {
-    auto zero = llvm::ConstantFP::get(
-        llvm::Type::getFloatTy(*(astcontext->context)), float(0.0));
-    condinst = astcontext->builder->CreateFCmpONE(condori, zero);
-  }
+
+  auto condinst = astcontext->generate_condition(condori);
 
   this->code->generate(astcontext);
 
