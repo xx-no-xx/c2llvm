@@ -35,6 +35,7 @@ class
 
 // 表达式相关
 class ASTBinaryExpression;  // 二元运算的类，形如 a + 1 [不包括赋值]
+class ASTSingleExpression;  // 一元运算的类，取地址，取反
 
 // 常量
 class ASTInteger;  // int 常量，形如998244353
@@ -55,6 +56,7 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_CHAR 3
 #define TYPE_FLOAT 4
 #define TYPE_BOOL 5
+#define TYPE_INT_PTR 6
 
 // [二元]运算符Define
 #define OP_BI_ADD 0
@@ -71,6 +73,9 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_EQ 11
 #define OP_BI_NEQ 12
 
+#define OP_SI_ADDRESS 13  // 取地址
+#define OP_SI_NOT 14
+
 extern ASTCodeBlockExpression* entryCodeBlock;
 
 class ASTNode {
@@ -84,6 +89,7 @@ class ASTNode {
     // 生成该AST结点对应的llvmIR代码
     return nullptr;
   }
+  virtual llvm::Value* generate_ptr(ASTContext* astcontext) { return nullptr; }
   virtual std::string get_class_name() { return "ASTNode"; }
   virtual void debug() {
     std::cout << "this is " << get_class_name() << std::endl;
@@ -194,6 +200,7 @@ class ASTVariableExpression : public ASTExpression {
                         int _array_length = -1)
       : name(_name), is_array(_is_array), array_length(_array_length) {}
   llvm::Value* generate(ASTContext* astcontext) override;
+  llvm::Value* generate_ptr(ASTContext* astcontext) override;
   void set_array(int len) {
     array_length = len;
     is_array = true;
@@ -322,6 +329,23 @@ class ASTBinaryExpression : public ASTExpression {
   }
 };
 
+class ASTSingleExpression : public ASTExpression {
+  // 所有一元运算的类
+ private:
+  int operation;  // !, &
+  ASTExpression* exp;
+
+ public:
+  ASTSingleExpression(int _operation, ASTExpression* _exp)
+      : operation(_operation), exp(_exp) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTSingleExpression"; }
+  void debug(void) override {
+    std::cout << " [SingleOperation]" << operation << " ";
+    exp->debug();
+  }
+};
+
 class ASTCallExpression : public ASTExpression {
   // 所有call其他函数的类
  private:
@@ -434,7 +458,7 @@ class ASTArrayExpression : public ASTExpression {
   ASTArrayExpression(std::string _name, ASTExpression* _index)
       : name(_name), index(_index) {}
   llvm::Value* generate(ASTContext* astcontext) override;
-  llvm::Value* generate_ptr(ASTContext* astcontext);
+  llvm::Value* generate_ptr(ASTContext* astcontext) override;
   std::string get_name(void) { return name; }
   std::string get_class_name(void) override { return "ASTArrayExpression"; }
   void debug(void) override {

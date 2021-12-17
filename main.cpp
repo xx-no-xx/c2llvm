@@ -25,7 +25,7 @@ extern int yyparse();  // yacc & lex 以分析现有的文件
 
 void test_ast(ASTContext* context) {
   // 造一个空的函数参数列表
-  std::vector<std::pair<ARGdefine, ARGname>> args;
+  std::vector<int> args;
   args.clear();
 
   // 造一个函数原型
@@ -151,7 +151,7 @@ void test_ast(ASTContext* context) {
 
 void test_gen(ASTContext* context) {
   // 造一个空的函数参数列表
-  std::vector<std::pair<ARGdefine, ARGname>> args;
+  std::vector<int> args;
   args.clear();
 
   // 造一个函数原型

@@ -22,6 +22,8 @@ llvm::Value* ASTContext::generate_condition(llvm::Value* condori) {
     condinst = builder->CreateFCmpONE(condori, zero);
   } else if (condori->getType() == llvm::Type::getInt1Ty(*context)) {
     condinst = condori;
+  } else if (condori->getType() == get_type(TYPE_INT_PTR)) {
+    condinst = builder->CreateIsNull(condori);
   } else {
     std::cout << "panic: wrong condition type" << std::endl;
     exit(0);
@@ -71,6 +73,8 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getFloatTy(*(this->context));
   } else if (type == TYPE_BOOL) {
     return llvm::Type::getInt1Ty(*(this->context));
+  } else if (type == TYPE_INT_PTR) {
+    return llvm::Type::getInt32PtrTy(*(this->context));
   }
   return nullptr;
 }
@@ -424,6 +428,10 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
   return brinst;
 }
 
+llvm::Value* ASTVariableExpression::generate_ptr(ASTContext* astcontext) {
+  return astcontext->get_var(name);
+}
+
 llvm::Value* ASTArrayExpression::generate(ASTContext* astcontext) {
   auto ptr = this->generate_ptr(astcontext);
   auto var_load = astcontext->builder->CreateLoad(
@@ -452,4 +460,21 @@ llvm::Value* ASTArrayAssign::generate(ASTContext* astcontext) {
   auto assign =
       astcontext->builder->CreateStore(this->rhs->generate(astcontext), var);
   return assign;
+}
+
+llvm::Value* ASTSingleExpression::generate(ASTContext* astcontext) {
+  if (operation == OP_SI_ADDRESS) {
+    std::cout << "here" << std::endl;
+    auto inst = this->exp->generate_ptr(astcontext);
+    std::cout << "here"
+              << " " << inst << " " << exp->get_class_name() << std::endl;
+    llvm::errs() << *(inst->getType());
+    return inst;
+  } else if (operation == OP_SI_NOT) {
+    auto code = this->exp->generate(astcontext);
+    auto condition = astcontext->generate_condition(code);
+    return astcontext->builder->CreateNot(condition);
+  }
+  std::cout << "panic: not support single expression" << std::endl;
+  return nullptr;
 }

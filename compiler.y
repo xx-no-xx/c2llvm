@@ -280,7 +280,15 @@ postfix_expression:
 // 一元表达式，如a!, *a，目前等价于后缀表达式
 primary_expression:
 	postfix_expression {$$ = $1;}
-	;
+| TBIT_NOT postfix_expression {
+		$$ = new ASTSingleExpression(OP_SI_NOT, $2);
+		std::cout << "not" << $2->get_class_name() << std::endl;
+	}
+| TBIT_AND postfix_expression {
+		$$ = new ASTSingleExpression(OP_SI_ADDRESS, $2);
+		std::cout << "address" << $2->get_class_name() << std::endl;
+	}
+;
 
 // 所有的计算式，都可分解为和式的加减
 calculate_expression:
