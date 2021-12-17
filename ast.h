@@ -3,11 +3,13 @@
 #define C2LLVM_AST_HPP
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Value.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <iostream>
 #include <map>
 #include <utility>
 #include <vector>
+
 
 // 环境
 class ASTContext;  // 用于存储当前语法分析树的上下文信息
@@ -54,6 +56,8 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_CHAR 3
 #define TYPE_FLOAT 4
 
+
+
 // [二元]运算符Define
 #define OP_BI_ADD 0
 #define OP_BI_SUB 1
@@ -63,9 +67,12 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_MORE 5
 #define OP_BI_LESSEQ 6
 #define OP_BI_MOREEQ 7
-#define OP_BI_AND 8
-#define OP_BI_OR 9
+#define OP_BI_AND 8 // 逻辑
+#define OP_BI_OR 9 // 逻辑
 #define OP_BI_MOD 10
+#define OP_BI_EQ 11
+
+extern ASTCodeBlockExpression* entryCodeBlock;
 
 class ASTNode {
   // 所有AST结点的基类
@@ -190,7 +197,7 @@ class ASTVariableExpression : public ASTExpression {
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_name(void) { return name; }
   int get_array_length(void) {
-    if (is_array) return 0;
+    if (is_array == false) return 0;
     return array_length;
   }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }

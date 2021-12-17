@@ -25,7 +25,6 @@ llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
     std::cout << "panic: empty code stack when creating" << std::endl;
     return nullptr;
   }
-  array_length = 4;
   if (array_length > 0) {
     auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
     auto var = builder->CreateAlloca(alloctype);
@@ -137,7 +136,8 @@ llvm::Value* ASTVariableAssign::generate(ASTContext* astcontext) {
 
 // int A = B;的赋值语句
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
-  auto inst = astcontext->create_local_var(type, this->lhs->get_name());
+  auto inst = astcontext->create_local_var(type, this->lhs->get_name(),
+                                           this->lhs->get_array_length());
   if (this->rhs != nullptr) {
     astcontext->builder->CreateStore(this->rhs->generate(astcontext), inst);
   }
@@ -188,10 +188,8 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   llvm::Value* r_code = this->rhs->generate(astcontext);
 
   if (!l_code | !r_code) return nullptr;
-
   if (l_code->getType() != r_code->getType())
     std::cout << "different type in binary expression" << std::endl;
-
   if (this->operation == OP_BI_ADD) {
     auto inst = astcontext->builder->CreateAdd(
         l_code, r_code);  // 创造l_code + r_code 的 add

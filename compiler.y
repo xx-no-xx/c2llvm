@@ -5,10 +5,10 @@
 	#include <iostream>
 	extern int yylex(void); // 被yyparse()调用
 	extern int yyparse(void);  //提前声明
-
+	
 	void pass(); // pass : 啥也不干
 
-	ASTCodeBlockExpression* entryCodeBlock = nullptr; // entry的"基本块"
+	ASTCodeBlockExpression* entryCodeBlock; // entry的"基本块"
 
 	void yyerror(const char* s) { // 用来报错
 		printf("ERROR-IN-YACC: %s\n", s);
@@ -66,11 +66,12 @@
 // %token <xxx> 制定token从yylval.xxx获取
 
 // 非终结符
-%type <CodeBlock> entry areas area code_block loop_block condition_block
+%type <CodeBlock> entry areas area code_block loop_block condition_block for_block for_assign_block
 %type <function_proto> function_prototype // 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
-%type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression
+%type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression 
+%type <expression> logic_expression logic_and_expression
 %type <expression> code_line assign_line
 %type <expression_list> code_lines
 %type <variable_define> var_defination
@@ -163,17 +164,20 @@ loop_block:
 
 // 条件块
 condition_block:
-	IF TLPAREN compare_expression TRPAREN code_block %prec LOWER_THAN_ELSE{
+	IF TLPAREN logic_expression TRPAREN code_block %prec LOWER_THAN_ELSE{
 		// TODO: $$ = new ASTIf($3, $5, nullptr);
 		std::cout << "get if_block without else" << std::endl;
 	}
-	| IF TLPAREN compare_expression TRPAREN code_block ELSE code_block{
+	| IF TLPAREN logic_expression TRPAREN code_block ELSE code_block{
 		// TODO: $$ = new ASTIf($3, $5, nullptr);
 		std::cout << "get if_block with else" << std::endl;
 	}
 
 // for循环块
-
+for_block:
+	FOR TLPAREN for_assign_block SEMICOLON compare_expression SEMICOLON for_assign_block TRPAREN code_block{
+		
+	}
 
 // 多行语句
 code_lines:
@@ -278,12 +282,12 @@ calculate_expression:
 	| calculate_expression TADD sum_expression{
 		// TODO: new 一个二元运算的node
 		// $$ = $1 + $3;
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);
+		$$ = new ASTBinaryExpression(OP_BI_ADD, $1, $3);
 	}
 	| calculate_expression TSUB sum_expression{
 		// TODO: new 一个二元运算的node
 		// $$ = $1 - $3;
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);
+		$$ = new ASTBinaryExpression(OP_BI_SUB, $1, $3);
 	}
 ;
 
@@ -293,17 +297,17 @@ sum_expression:
 	| sum_expression TMUL primary_expression {
 		// $$ = $1 * $3;
 		// TODO: new 一个二元运算的node
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);
+		$$ = new ASTBinaryExpression(OP_BI_MUL, $1, $3);
 	}
 	| sum_expression TDIV primary_expression {
 		// $$ = $1 / $3;
 		// TODO: new 一个二元运算的node
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);
+		$$ = new ASTBinaryExpression(OP_BI_DIV, $1, $3);
 	}
 	| sum_expression TMOD primary_expression {
 		// $$ = $1 % $3;
 		// TODO: new 一个二元运算的node
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3); 
+		$$ = new ASTBinaryExpression(OP_BI_MOD, $1, $3); 
 	}
 	;
 
@@ -311,18 +315,35 @@ sum_expression:
 compare_expression:
 	calculate_expression {$$ = $1;}
 	| calculate_expression TCLT calculate_expression{
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);} // <
+		$$ = new ASTBinaryExpression(OP_BI_LESS, $1, $3);} // <
 	| calculate_expression TCLE calculate_expression{
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);} // <=
+		$$ = new ASTBinaryExpression(OP_BI_LESSEQ, $1, $3);} // <=
 	| calculate_expression TCGT calculate_expression{
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);} // >
+		$$ = new ASTBinaryExpression(OP_BI_MORE, $1, $3);} // >
 	| calculate_expression TCGE calculate_expression{
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);} // >=
+		$$ = new ASTBinaryExpression(OP_BI_MOREEQ, $1, $3);} // >=
 	| calculate_expression TCEQ calculate_expression{
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);} // ==
+		$$ = new ASTBinaryExpression(OP_BI_MORE, $1, $3);} // ==
 	| calculate_expression TCNE calculate_expression{
-		$$ = new ASTBinaryExpression((*$2)[0], $1, $3);} // !=
+		$$ = new ASTBinaryExpression(OP_BI_MOREEQ, $1, $3);} // !=
 	;
+
+// 逻辑式，一定可以拆分为逻辑与的或
+logic_expression:
+	logic_and_expression {$$ = $1; }
+	| logic_expression TOR logic_and_expression{
+		$$ = new ASTBinaryExpression(OP_BI_OR, $1, $3);
+	}
+	;
+
+// 逻辑与，一堆比较式的与
+logic_and_expression:
+	compare_expression{ $$ = $1; }
+	| logic_and_expression TAND compare_expression{
+		$$ = new ASTBinaryExpression(OP_BI_AND, $1, $3);
+	}
+	;
+
 
 // 赋值式
 assign_expression:
@@ -333,7 +354,16 @@ assign_expression:
 		// TODO: 实现索引节点 index = new ASTIndex($1, $3);
 		// TODO: 赋值节点 $$ = new ASTAssign($1, index);
 	}
+	;
 
+for_assign_block:
+	assign_expression{
+		$$ = new ASTCodeBlockExpression();
+ 		$$->append_code($1);
+	}
+	| for_assign_block TCOMMA assign_expression{
+		$1->append_code($1);
+	}
 
 /* 变量类型 */
 type_specifier:
