@@ -25,7 +25,6 @@ llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
     std::cout << "panic: empty code stack when creating" << std::endl;
     return nullptr;
   }
-  array_length = 4;
   if (array_length > 0) {
     auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
     auto var = builder->CreateAlloca(alloctype);
@@ -137,7 +136,8 @@ llvm::Value* ASTVariableAssign::generate(ASTContext* astcontext) {
 
 // int A = B;的赋值语句
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
-  auto inst = astcontext->create_local_var(type, this->lhs->get_name());
+  auto inst = astcontext->create_local_var(type, this->lhs->get_name(),
+                                           this->lhs->get_array_length());
   if (this->rhs != nullptr) {
     astcontext->builder->CreateStore(this->rhs->generate(astcontext), inst);
   }

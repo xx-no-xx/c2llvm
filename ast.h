@@ -63,9 +63,10 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_MORE 5
 #define OP_BI_LESSEQ 6
 #define OP_BI_MOREEQ 7
-#define OP_BI_AND 8
-#define OP_BI_OR 9
+#define OP_BI_AND 8 // 逻辑
+#define OP_BI_OR 9 // 逻辑
 #define OP_BI_MOD 10
+#define OP_BI_EQ 11
 
 class ASTNode {
   // 所有AST结点的基类
@@ -190,7 +191,7 @@ class ASTVariableExpression : public ASTExpression {
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_name(void) { return name; }
   int get_array_length(void) {
-    if (is_array) return 0;
+    if (is_array == false) return 0;
     return array_length;
   }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
