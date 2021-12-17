@@ -104,6 +104,66 @@ area -> 全局变量区域，函数原型区域（声明），函数定义区域
 
 `test_ast`给出了一个造AST的例子。yacc应该达到类似的效果。操作顺序不是问题，我可以另写api。
 
+## 变量接口说明
+
+变量：
+左值：
+```
+int x;
+
+// 先解析x为ASTVariableExpression exp
+// 然后解析int x为ASTVariableDefine(type, exp, nullptr)
+
+int x = 1;                       
+
+// 先解析x为ASTVariableExpression exp
+// 在把1解析为ASTExpression rhs
+// ASTVariableDefine(type, exp, rhs), 
+
+
+x = 1;                       
+// 先解析x为ASTVariableExpression lhs
+// 在把1解析为ASTExpression rhs
+// 最后x=1解析为 ASTVariableAssign(lhs, rhs)
+```
+右值：
+```
+..... = x;                       
+// 解析x为ASTVariableExpression()
+```
+
+数组本身：
+左值：
+```
+int x[10000];    
+// 先解析x[10000]为ASTVariableExpression exp（name="x", is_array = true, array_length = 10000）
+//  然后解析int x[10000]为ASTVariableDefine(type_int, exp, nullptr)
+ ```
+
+右值：
+```
+（函数调用的参数）foo(x);
+// 解析x为ASTVariableExpression, is_array和array_length不用管
+
+（函数调用的参数，需要取地址，todo）scanf(&x); 
+// todo
+```
+
+数组元素：
+左值：
+```
+x[a + b] = 1; 
+// 先解析a + b为ASTExpression*(BinaryExpression, Integer，具体看情况) indexexp,
+// 然后解析x[a + b]为ASTArrayExpression(name="x", index=indexexp) left;
+// 解析1为ASTInteger(ASTExpression) right;
+// 再然后解析x[a + b] = 1为ASTArrayAssign(lhs = left, rhs = right); 
+```
+
+右值：
+```
+.... = x[3];
+```
+
 ---
 ---
 ---
