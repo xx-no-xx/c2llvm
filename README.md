@@ -161,7 +161,9 @@ x[a + b] = 1;
 
 右值：
 ```
-.... = x[3];
+.... = x[a+b];
+// 先解析a + b为ASTExpression*(BinaryExpression, Integer，具体看情况) indexexp,
+// 然后解析x[a + b]为ASTArrayExpression(name="x", index=indexexp) left;
 ```
 
 ---
