@@ -27,6 +27,7 @@ class ASTContext {
   llvm::Function *current_f;
 
   std::map<std::string, llvm::Value *> global_symboltable;
+  std::map<std::string, llvm::Value *> local_symboltable; // 函数参数符号表
   // TODO: 全局符号表
 
   ASTContext() {
@@ -45,7 +46,8 @@ class ASTContext {
       codeblock->copy_symbol_from(codestack.top()->get_symboltable());
     } else {
       codeblock->copy_symbol_from(global_symboltable);
-      // TODO: 载入函数参数的符号表
+      for(auto item : local_symboltable)
+        codeblock->add_symbol(item.first, item.second);
     }
     codestack.push(codeblock);
   }
@@ -55,8 +57,7 @@ class ASTContext {
   };  // 获取最新（当前的代码块）
 
   void clear_symboltable(void);
-  //  void load_argument();
-  // TODO: 载入函数的参数
+
 
   llvm::Value *create_local_var(int type, std::string, int array_length = 0);
   // 创建一个局部变量。
