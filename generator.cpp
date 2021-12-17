@@ -180,18 +180,13 @@ llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
 }
 
 // 在函数原型部分，生成这个函数本身
-llvm::Function* ASTFunctionProto::generate(ASTContext* astcontext) {
+llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   //函数返回类型
   llvm::Type* returnType = astcontext->get_type(this->ret_type);
   //函数参数类型
-<<<<<<< HEAD
   std::vector<llvm::Type *> funcArgs;
   for(auto item : this->args)
     funcArgs.push_back(astcontext->get_type(item.first));
-=======
-  std::vector<llvm::Type*> funcArgs;
-  for (auto item : this->args) funcArgs.push_back(astcontext->get_type(item));
->>>>>>> ea14b1e0c24f3a19f2745660e7e518f6a7edb2c1
   //根据前两者构成函数类型
   llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, false);
   //构造函数
@@ -199,50 +194,35 @@ llvm::Function* ASTFunctionProto::generate(ASTContext* astcontext) {
   //设置参数名称
   auto F = astcontext->current_m->getFunction(this->name);
   unsigned idx = 0;
-  for (auto &Arg : F->args()){
+  for (auto &Arg : F->args())
     Arg.setName(this->args[idx++].second);
   // 把当前函数更新到上下文
-<<<<<<< HEAD
   return astcontext->current_f = F;
 }
 
-llvm::Function* ASTFunctionImp::generate(ASTContext* astcontext) {
+llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
   llvm::Function *TheFunc = astcontext->current_m->getFunction(
       this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
 
-  if (!Thefunc) 
-      Thefunc = this->prototype->generate(astcontext);  // 首先生成函数
+  if (!TheFunc) 
+      this->prototype->generate(astcontext);  // 首先生成函数
 
-  if (!Thefunc) 
+  TheFunc = astcontext->current_m->getFunction(
+      this->prototype->get_name());
+
+  if (!TheFunc) 
     return nullptr;
-=======
-  astcontext->current_f = astcontext->current_m->getFunction(this->name);
-  return astcontext->current_f;
-}
-
-llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
-  llvm::Function* func = astcontext->current_m->getFunction(
-      this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
-
-  if (!func) this->prototype->generate(astcontext);  // 首先生成函数
-
-  func = astcontext->current_m->getFunction(this->prototype->get_name());
-  if (!func) return nullptr;
->>>>>>> ea14b1e0c24f3a19f2745660e7e518f6a7edb2c1
 
   //将参数名称加入符号表
-  astcontext->local_symboltable->clear();
-  for (auto &Arg : Thefunc->args())
-    astcontext->local_symboltable[Arg.getName()] = &Arg;
+  astcontext->local_symboltable.clear();
+  for (auto &Arg : TheFunc->args())
+    astcontext->local_symboltable[std::string(Arg.getName())] = &Arg;
 
   // 如果codeblock顺利gen,
   // 它创造的bb会在函数的入口上。因为函数内部没有任何多余的bb了。
-  if (Value* RetVal = this->function_entry->generate(astcontext)){ 
-    std::cout << "Function Generated!" << std::endl;
-    astcontext->builder->CreateRet(RetVal);  // return
-    return Thefunc;
-  }
-  Thefunc->eraseFromParent();
+  this->function_entry->generate(astcontext);
+  std::cout << "Function Generated!" << std::endl;
+  astcontext->builder->CreateRet(0);  // return
   return nullptr;
 }
 
