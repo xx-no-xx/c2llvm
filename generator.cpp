@@ -173,7 +173,6 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   llvm::Value* r_code = this->rhs->generate(astcontext);
 
   if (!l_code | !r_code) return nullptr;
-
   if (this->operation == OP_BI_ADD) {
     auto inst = astcontext->builder->CreateAdd(
         l_code, r_code);  // 创造l_code + r_code 的 add

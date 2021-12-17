@@ -53,6 +53,8 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_DOUBLE 2
 #define TYPE_CHAR 3
 
+
+
 // [二元]运算符Define
 #define OP_BI_ADD 0
 #define OP_BI_SUB 1
