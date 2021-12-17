@@ -52,6 +52,7 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_INT 1
 #define TYPE_DOUBLE 2
 #define TYPE_CHAR 3
+#define TYPE_FLOAT 4
 
 
 
@@ -64,9 +65,10 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_MORE 5
 #define OP_BI_LESSEQ 6
 #define OP_BI_MOREEQ 7
-#define OP_BI_AND 8
-#define OP_BI_OR 9
+#define OP_BI_AND 8 // 逻辑
+#define OP_BI_OR 9 // 逻辑
 #define OP_BI_MOD 10
+#define OP_BI_EQ 11
 
 class ASTNode {
   // 所有AST结点的基类
@@ -181,8 +183,7 @@ class ASTVariableExpression : public ASTExpression {
   // 对应了一个表达式的左值, 一个变量，例如a
  private:
   std::string name;
-  // TODO: 对于数组应该另外处理
-  bool is_array;     // TODO： 这个表达式可能是个数组本身。
+  bool is_array;     // 它是否是数组
   int array_length;  // 数组的长度
 
  public:
@@ -191,6 +192,10 @@ class ASTVariableExpression : public ASTExpression {
       : name(_name), is_array(_is_array), array_length(_array_length) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_name(void) { return name; }
+  int get_array_length(void) {
+    if (is_array == false) return 0;
+    return array_length;
+  }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
   void debug(void) override { std::cout << "var:" << name << " "; }
 };
@@ -230,7 +235,10 @@ class ASTVariableDefine : public ASTPrototype {
     std::cout << "type:" << type << " ";
     lhs->debug();
     std::cout << " [ASSIGN FROM DEFINE]= ";
-    rhs->debug();
+    if (rhs)
+      rhs->debug();
+    else
+      std::cout << "none";
   }
 };
 
@@ -405,6 +413,44 @@ class ASTForExpression : public ASTExpression {
     code->debug();
     std::cout << " }";
     std::cout << "[END FOR]";
+  }
+};
+
+class ASTArrayExpression : public ASTExpression {
+  // 对应name[index]的数组元素
+ private:
+  std::string name;
+  ASTExpression* index;
+
+ public:
+  ASTArrayExpression(std::string _name, ASTExpression* _index)
+      : name(_name), index(_index) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  llvm::Value* generate_ptr(ASTContext* astcontext);
+  std::string get_name(void) { return name; }
+  std::string get_class_name(void) override { return "ASTArrayExpression"; }
+  void debug(void) override {
+    std::cout << "array_var:" << name << "[ ";
+    index->debug();
+    std::cout << " ]";
+  }
+};
+
+class ASTArrayAssign : public ASTExpression {
+  // 对应name[index]的数组元素
+ private:
+  ASTArrayExpression* lhs;
+  ASTExpression* rhs;
+
+ public:
+  ASTArrayAssign(ASTArrayExpression* _lhs, ASTExpression* _rhs)
+      : lhs(_lhs), rhs(_rhs) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTArrayAssign"; }
+  void debug(void) override {
+    lhs->debug();
+    std::cout << "[assign] = ";
+    rhs->debug();
   }
 };
 

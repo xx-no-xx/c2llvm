@@ -19,16 +19,23 @@ llvm::Value* ASTContext::get_var(std::string var_name) {
   return symbol;
 }
 
-llvm::Value* ASTContext::create_local_var(int type, std::string var_name) {
+llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
+                                          int array_length) {
   if (codestack.empty()) {
     std::cout << "panic: empty code stack when creating" << std::endl;
     return nullptr;
   }
-  auto var =
-      builder->CreateAlloca(this->get_type(type), nullptr,
-                            var_name);  // 创造单个变量，所以ArraySize = nullptr
-  codestack.top()->add_symbol(var_name, var);
-  return var;
+  if (array_length > 0) {
+    auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
+    auto var = builder->CreateAlloca(alloctype);
+    codestack.top()->add_symbol(var_name, var);
+    return var;
+  } else {
+    // 创造单个变量，所以ArraySize = nullptr
+    auto var = builder->CreateAlloca(this->get_type(type), nullptr, var_name);
+    codestack.top()->add_symbol(var_name, var);
+    return var;
+  }
 }
 
 llvm::Type* ASTContext::get_type(int type) {
@@ -36,8 +43,14 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getVoidTy(*(this->context));
   } else if (type == TYPE_INT) {
     return llvm::Type::getInt32Ty(*(this->context));
+  } else if (type == TYPE_CHAR) {  // TODO: char is integer
+    return llvm::Type::getInt32Ty(*(this->context));
+  } else if (type ==
+             TYPE_DOUBLE) {  // TODO: 为了更简单的比较，强制它们都是Float
+    return llvm::Type::getFloatTy(*(this->context));
+  } else if (type == TYPE_FLOAT) {
+    return llvm::Type::getFloatTy(*(this->context));
   }
-  // TODO
   return nullptr;
 }
 
@@ -105,7 +118,8 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
   auto var = astcontext->get_codestack_top()->get_symbol(
       this->get_name());  // 获取符号表
-  auto var_load_name = var->getName() + llvm::Twine("_load");  // 取名为xxx_load
+  auto var_load_name =
+      var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
   auto var_load = astcontext->builder->CreateLoad(
       var->getType()->getPointerElementType(), var,
       var_load_name);  // 将它load为右值 xxx_load = load xxx
@@ -122,7 +136,8 @@ llvm::Value* ASTVariableAssign::generate(ASTContext* astcontext) {
 
 // int A = B;的赋值语句
 llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
-  auto inst = astcontext->create_local_var(type, this->lhs->get_name());
+  auto inst = astcontext->create_local_var(type, this->lhs->get_name(),
+                                           this->lhs->get_array_length());
   if (this->rhs != nullptr) {
     astcontext->builder->CreateStore(this->rhs->generate(astcontext), inst);
   }
@@ -173,6 +188,13 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
   llvm::Value* r_code = this->rhs->generate(astcontext);
 
   if (!l_code | !r_code) return nullptr;
+<<<<<<< HEAD
+=======
+
+  if (l_code->getType() != r_code->getType())
+    std::cout << "different type in binary expression" << std::endl;
+
+>>>>>>> dc24b44f455e3dc79977fda870b59c9486cc038d
   if (this->operation == OP_BI_ADD) {
     auto inst = astcontext->builder->CreateAdd(
         l_code, r_code);  // 创造l_code + r_code 的 add
@@ -190,6 +212,20 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
     auto inst = astcontext->builder->CreateSDiv(
         l_code, r_code);  // 创造l_code + r_code 的 add
     return inst;
+  } else if (this->operation == OP_BI_LESS) {
+    if (r_code->getType()->getPointerElementType() ==
+        astcontext->get_type(TYPE_INT)) {
+      /* also for TYPE_CHAR */
+      auto inst = astcontext->builder->CreateICmpSLT(l_code, r_code);
+      return inst;
+    } else if (r_code->getType()->getPointerElementType() ==
+               astcontext->get_type(TYPE_FLOAT)) {
+      /* also for TYPE_DOUBLE */
+      auto inst = astcontext->builder->CreateFCmpOLT(l_code, r_code);
+      return inst;
+    } else {
+      std::cout << "panic: not allowed var type" << std::endl;
+    }
   }
   // TODO 其他运算情况
   return nullptr;
@@ -199,7 +235,7 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   // * 目前不考虑多个函数的情况
   return nullptr;
 }
-
+// todo: 操纵codeblock的实现顺序，导致codeblock中的符号表迁移异常？
 llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
   // todo: 对于a < b的条件特别判断？
   auto condori = this->condition->generate(astcontext);  // 原始condition
@@ -326,4 +362,35 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
   }
   astcontext->builder->SetInsertPoint(edBB);
   return brinst;
+}
+
+llvm::Value* ASTArrayExpression::generate(ASTContext* astcontext) {
+  auto ptr = this->generate_ptr(astcontext);
+  auto var_load = astcontext->builder->CreateLoad(
+      ptr->getType()->getPointerElementType(), ptr,
+      "");  // 将它load为右值 xxx_load = load xxx
+  return var_load;
+}
+
+llvm::Value* ASTArrayExpression::generate_ptr(ASTContext* astcontext) {
+  auto realindex = index->generate(astcontext);
+
+  llvm::SmallVector<llvm::Value*, 2> index_vec;
+  auto off = new ASTInteger(0);
+  index_vec.push_back(off->generate(astcontext));
+  index_vec.push_back(realindex);
+
+  auto var = astcontext->get_var(get_name());
+  auto ptr = astcontext->builder->CreateGEP(
+      var->getType()->getPointerElementType(), var, index_vec,
+      "");  // create get element pointer
+  return ptr;
+}
+
+llvm::Value* ASTArrayAssign::generate(ASTContext* astcontext) {
+  auto var = this->lhs->generate_ptr(astcontext);
+  llvm::errs() << *var << "\n";
+  auto assign =
+      astcontext->builder->CreateStore(this->rhs->generate(astcontext), var);
+  return assign;
 }
