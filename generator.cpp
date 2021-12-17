@@ -178,41 +178,49 @@ llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
 }
 
 // 在函数原型部分，生成这个函数本身
-llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
+llvm::Function* ASTFunctionProto::generate(ASTContext* astcontext) {
   //函数返回类型
   llvm::Type* returnType = astcontext->get_type(this->ret_type);
   //函数参数类型
   std::vector<llvm::Type *> funcArgs;
   for(auto item : this->args)
-    funcArgs.push_back(astcontext->get_type(item));
+    funcArgs.push_back(astcontext->get_type(item.first));
   //根据前两者构成函数类型
   llvm::FunctionType *FT = llvm:: FunctionType::get(returnType, funcArgs, false);
   //构造函数
   astcontext->current_m->getOrInsertFunction(this->name, FT);
+  //设置参数名称
+  auto F = astcontext->current_m->getFunction(this->name);
+  unsigned idx = 0;
+  for (auto &Arg : F->args()){
+    Arg.setName(this->args[idx++].second);
   // 把当前函数更新到上下文
-  astcontext->current_f = astcontext->current_m->getFunction(this->name);  
-  return astcontext->current_f;
+  return astcontext->current_f = F;
 }
 
-llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
-  llvm::Function *func = astcontext->current_m->getFunction(
+llvm::Function* ASTFunctionImp::generate(ASTContext* astcontext) {
+  llvm::Function *TheFunc = astcontext->current_m->getFunction(
       this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
 
-  if (!func) 
-      this->prototype->generate(astcontext);  // 首先生成函数
+  if (!Thefunc) 
+      Thefunc = this->prototype->generate(astcontext);  // 首先生成函数
 
-  func = astcontext->current_m->getFunction(this->prototype->get_name());
-  if (!func) 
+  if (!Thefunc) 
     return nullptr;
 
-  // TODO: 符号表
-  // TODO: astcontext->load_argument(); // 载入函数的参数
+  //将参数名称加入符号表
+  astcontext->local_symboltable->clear();
+  for (auto &Arg : Thefunc->args())
+    astcontext->local_symboltable[Arg.getName()] = &Arg;
 
   // 如果codeblock顺利gen,
   // 它创造的bb会在函数的入口上。因为函数内部没有任何多余的bb了。
-  this->function_entry->generate(astcontext);
-  std::cout << "Function Generated!" << std::endl;
-  astcontext->builder->CreateRet(0);  // return void
+  if (Value* RetVal = this->function_entry->generate(astcontext)){ 
+    std::cout << "Function Generated!" << std::endl;
+    astcontext->builder->CreateRet(RetVal);  // return
+    return Thefunc;
+  }
+  Thefunc->eraseFromParent();
   return nullptr;
 }
 
