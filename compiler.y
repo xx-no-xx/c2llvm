@@ -48,7 +48,8 @@
 	std::string *str_value; // 存储identifier的实际值
 	std::string *char_value;	// char型的实际值
 	double double_value;	// double型的实际值
-  	std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int
+//  std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int
+  int type;
 	std::vector<ASTExpression*> *expression_list;	// 多行代码
 }
 
@@ -224,16 +225,16 @@ var_name:
 
 // 变量的声明和定义，若未初始化，为nullptr。如int i = 1;
 var_defination: 
-	type_specifier var_name SEMICOLON { $$ = new ASTVariableDefine((int)(*$1)[0], $2, nullptr);}
+	type_specifier var_name SEMICOLON { $$ = new ASTVariableDefine($1, $2, nullptr);}
 	| type_specifier var_name ASSIGN calculate_expression SEMICOLON {
-		$$ = new ASTVariableDefine((int)(*$1)[0], $2, $4);
+		$$ = new ASTVariableDefine($1, $2, $4);
 	}
 	| type_specifier var_name TLBRACKET INT_CONSTANT TRBRACKET SEMICOLON {
 		// 数组
 		// TODO: $2->is_array = true; 目前访问不到
 		// TODO: $2->array_length = INT_CONSTANT; 目前访问不到
-		$$ = new ASTVariableDefine((int)(*$1)[0], $2, nullptr);
-		std::cout << "create array: " << *$1 << std::endl;
+		$$ = new ASTVariableDefine($1, $2, nullptr);
+//		std::cout << "create array: " << *$1 << std::endl;
 	}
 	;
 
@@ -367,10 +368,10 @@ for_assign_block:
 
 /* 变量类型 */
 type_specifier:
-	VOID {$$ = $1; }
-	| INT {$$ = $1; }
-	| CHAR {$$ = $1; }
-	| DOUBLE {$$ = $1; }
+	VOID {$$ = TYPE_VOID; }
+	| INT {$$ = TYPE_INT; }
+	| CHAR {$$ = TYPE_CHAR; }
+	| DOUBLE {$$ = TYPE_DOUBLE; }
 	;
 
 

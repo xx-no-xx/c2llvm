@@ -21,8 +21,8 @@ void ASTCodeBlockExpression::clear_symbol(void) {
 }
 
 void ASTCodeBlockExpression::copy_symbol_from(
-    ASTCodeBlockExpression* codeblock) {
-  symboltable = codeblock->get_symboltable();
+    std::map<std::string, llvm::Value*> table) {
+  symboltable = table;
   return;
 }
 
