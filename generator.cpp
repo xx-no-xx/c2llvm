@@ -44,8 +44,14 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getVoidTy(*(this->context));
   } else if (type == TYPE_INT) {
     return llvm::Type::getInt32Ty(*(this->context));
+  } else if (type == TYPE_CHAR) {  // TODO: char is integer
+    return llvm::Type::getInt32Ty(*(this->context));
+  } else if (type ==
+             TYPE_DOUBLE) {  // TODO: 为了更简单的比较，强制它们都是Float
+    return llvm::Type::getFloatTy(*(this->context));
+  } else if (type == TYPE_FLOAT) {
+    return llvm::Type::getFloatTy(*(this->context));
   }
-  // TODO
   return nullptr;
 }
 
@@ -183,6 +189,9 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 
   if (!l_code | !r_code) return nullptr;
 
+  if (l_code->getType() != r_code->getType())
+    std::cout << "different type in binary expression" << std::endl;
+
   if (this->operation == OP_BI_ADD) {
     auto inst = astcontext->builder->CreateAdd(
         l_code, r_code);  // 创造l_code + r_code 的 add
@@ -200,6 +209,20 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
     auto inst = astcontext->builder->CreateSDiv(
         l_code, r_code);  // 创造l_code + r_code 的 add
     return inst;
+  } else if (this->operation == OP_BI_LESS) {
+    if (r_code->getType()->getPointerElementType() ==
+        astcontext->get_type(TYPE_INT)) {
+      /* also for TYPE_CHAR */
+      auto inst = astcontext->builder->CreateICmpSLT(l_code, r_code);
+      return inst;
+    } else if (r_code->getType()->getPointerElementType() ==
+               astcontext->get_type(TYPE_FLOAT)) {
+      /* also for TYPE_DOUBLE */
+      auto inst = astcontext->builder->CreateFCmpOLT(l_code, r_code);
+      return inst;
+    } else {
+      std::cout << "panic: not allowed var type" << std::endl;
+    }
   }
   // TODO 其他运算情况
   return nullptr;
