@@ -68,7 +68,7 @@
 // %token <xxx> 制定token从yylval.xxx获取
 
 // 非终结符
-%type <CodeBlock> entry areas area code_block loop_block  for_block for_assign_block
+%type <CodeBlock> entry areas area code_block  for_assign_block
 %type <function_proto> function_prototype // 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
@@ -79,7 +79,7 @@
 %type <expression_list> code_lines
 %type <variable_define> var_defination
 %type <type> type_specifier
-%type <expression> condition_exp 
+%type <expression> condition_exp  for_exp loop_exp 
 // 表示这些非终结符，应该从哪里获取yylval
 
 %start entry // 最开始的规则
@@ -160,8 +160,9 @@ code_block:
 	;
 
 // while循环块
-loop_block: 
+loop_exp: 
 	WHILE TLPAREN compare_expression TRPAREN code_block{
+		$$ = new ASTWhileExpression($3, $5);
 		// TODO: $$ = new ASTWhile($3, $5);
 		std::cout<< "get while_loop" << std::endl;
 	}
@@ -178,9 +179,9 @@ condition_exp:
 	}
 
 // for循环块
-for_block:
+for_exp:
 	FOR TLPAREN for_assign_block SEMICOLON compare_expression SEMICOLON for_assign_block TRPAREN code_block{
-		
+		$$ = new ASTForExpression($5, $9, $3, $7); 
 	}
 
 // 多行语句
@@ -201,10 +202,13 @@ code_line:
 		$$ = $1;
 		std::cout << "get assign line" << std::endl;
 	}
-	| loop_block{
-		$<CodeBlock>$ = $1;
+	| loop_exp{
+		$$ = $1;
 	}	// ???没有操作？疑惑
 	| condition_exp{
+		$$ = $1;
+	}
+  | for_exp{
 		$$ = $1;
 	}
 	;
@@ -358,7 +362,7 @@ for_assign_block:
  		$$->append_code($1);
 	}
 	| for_assign_block TCOMMA assign_expression{
-		$1->append_code($1);
+		$1->append_code($3);
 	}
 
 /* 变量类型 */

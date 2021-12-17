@@ -240,13 +240,11 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
         l_code, r_code);  // 创造l_code + r_code 的 add
     return inst;
   } else if (this->operation == OP_BI_LESS) {
-    if (r_code->getType()->getPointerElementType() ==
-        astcontext->get_type(TYPE_INT)) {
+    if (r_code->getType() == astcontext->get_type(TYPE_INT)) {
       /* also for TYPE_CHAR */
       auto inst = astcontext->builder->CreateICmpSLT(l_code, r_code);
       return inst;
-    } else if (r_code->getType()->getPointerElementType() ==
-               astcontext->get_type(TYPE_FLOAT)) {
+    } else if (r_code->getType() == astcontext->get_type(TYPE_FLOAT)) {
       /* also for TYPE_DOUBLE */
       auto inst = astcontext->builder->CreateFCmpOLT(l_code, r_code);
       return inst;

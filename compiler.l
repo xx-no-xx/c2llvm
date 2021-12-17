@@ -65,6 +65,7 @@ void save_value(std::string str);
 "if"		{ save_type("IF"); return IF; }
 "else"		{ save_type("ELSE"); return ELSE; }
 "while"		{ save_type("WHILE"); return WHILE; }
+"for"		{ save_type("FOR"); return FOR; }
 "break"		{ save_type("BREAK"); return BREAK; }
 "continue"	{ save_type("CONTINUE"); return CONTINUE; }
 "return"	{ save_type("RETURN"); return RETURN; }
