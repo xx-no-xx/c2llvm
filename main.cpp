@@ -37,7 +37,7 @@ void test_ast(ASTContext* context) {
   auto integer = new ASTInteger(value);
   // 和另一个纯的数字:
 
-  int value2 = 200;
+  char value2 = 'a';
   auto integer2 = new ASTInteger(value2);
 
   auto integer3 = new ASTInteger(2);
