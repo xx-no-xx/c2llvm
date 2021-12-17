@@ -245,7 +245,6 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   //获取函数
-<<<<<<< HEAD
   llvm::Function *func = astcontext->current_m->getFunction(this->callee);
   //异常处理
   if (!func) {
@@ -261,12 +260,6 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   std::vector<llvm::Value* >putargs;
   for (auto arg : this->args) 
     putargs.push_back(arg->generate(astcontext));
-=======
-  llvm::Function* func = astcontext->current_m->getFunction(this->callee);
-  //构造参数
-  std::vector<llvm::Value*> putargs;
-  for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
->>>>>>> 4a0bd1a39b9ed422e3257415a674e5a80a9fe201
   //调用
   return astcontext->builder->CreateCall(func, putargs);
 }
