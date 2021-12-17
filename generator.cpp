@@ -161,9 +161,12 @@ llvm::Value* ASTVariableDefine::generate(ASTContext* astcontext) {
 // 在函数原型部分，生成这个函数本身
 llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   llvm::FunctionType* functype =
-      llvm::FunctionType::get(astcontext->get_type(TYPE_VOID), false);
+      llvm::FunctionType::get(astcontext->get_type(this->ret_type), false);
   // TODO: 当前创造了一个void() {}的函数
+<<<<<<< HEAD
+=======
 
+>>>>>>> 4a0bd1a39b9ed422e3257415a674e5a80a9fe201
   llvm::Function* func =
       llvm::Function::Create(functype, llvm::Function::ExternalLinkage,
                              this->get_name(), astcontext->current_m);
@@ -242,14 +245,30 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
 
 llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
   //获取函数
+<<<<<<< HEAD
+  llvm::Function *func = astcontext->current_m->getFunction(this->callee);
+  //异常处理
+  if (!func) {
+    std::cout << "Unknown Function referenced" << std::endl;
+    return nullptr;
+  }
+  
+  if (func->arg_size() != this->args.size()){
+    std::cout << "Incorrect # arguments passed" << std::endl;
+    return nullptr;
+  }
+  //构造参数
+  std::vector<llvm::Value* >putargs;
+  for (auto arg : this->args) 
+    putargs.push_back(arg->generate(astcontext));
+=======
   llvm::Function* func = astcontext->current_m->getFunction(this->callee);
   //构造参数
   std::vector<llvm::Value*> putargs;
   for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
+>>>>>>> 4a0bd1a39b9ed422e3257415a674e5a80a9fe201
   //调用
-  llvm::Value* ret_value = astcontext->builder->CreateCall(func, putargs);
-  // * 目前不考虑多个函数的情况
-  return nullptr;
+  return astcontext->builder->CreateCall(func, putargs);
 }
 // todo: 操纵codeblock的实现顺序，导致codeblock中的符号表迁移异常？
 llvm::Value* ASTIfExpression::generate(ASTContext* astcontext) {
