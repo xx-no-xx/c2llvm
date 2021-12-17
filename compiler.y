@@ -5,10 +5,10 @@
 	#include <iostream>
 	extern int yylex(void); // 被yyparse()调用
 	extern int yyparse(void);  //提前声明
-
+	
 	void pass(); // pass : 啥也不干
 
-	ASTCodeBlockExpression* entryCodeBlock = nullptr; // entry的"基本块"
+	ASTCodeBlockExpression* entryCodeBlock; // entry的"基本块"
 
 	void yyerror(const char* s) { // 用来报错
 		printf("ERROR-IN-YACC: %s\n", s);

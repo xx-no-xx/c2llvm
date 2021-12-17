@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+
 // 环境
 class ASTContext;  // 用于存储当前语法分析树的上下文信息
 
@@ -70,6 +71,8 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_OR 9 // 逻辑
 #define OP_BI_MOD 10
 #define OP_BI_EQ 11
+
+extern ASTCodeBlockExpression* entryCodeBlock;
 
 class ASTNode {
   // 所有AST结点的基类
