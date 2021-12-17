@@ -1,6 +1,6 @@
-#include <stdio.h>
-
 // 判断回文字符串
+extern int scanf(char *s, ...);
+extern int printf(char *s, ...);
 
 int main() {
   char f[100];

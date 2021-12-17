@@ -1,6 +1,6 @@
-#include <stdio.h>
-
 // 一个排序的例子
+extern int scanf(char *s, ...);
+extern int printf(char *s, ...);
 
 int main() {
   int n;
