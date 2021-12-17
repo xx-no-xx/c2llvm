@@ -93,7 +93,7 @@ void save_value(std::string str);
     return DOUBLE_CONSTANT;
 } // double型
 
-[ \t\v\n\f]
+[ \t\v\f] // remove /n
 . {
     fprintf(stderr, "lexical error.\n");
     exit(1);
