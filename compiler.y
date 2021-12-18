@@ -50,7 +50,7 @@
 	std::string *char_value;	// char型的实际值
 	double double_value;	// double型的实际值
 //  std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int
-  int type;
+  	int type;
 	std::vector<ASTExpression*> *expression_list;	// 多行代码
 }
 
@@ -183,6 +183,12 @@ for_exp:
 	FOR TLPAREN for_assign_block SEMICOLON compare_expression SEMICOLON for_assign_block TRPAREN code_block{
 		$$ = new ASTForExpression($5, $9, $3, $7); 
 	}
+	| FOR TLPAREN for_assign_block SEMICOLON compare_expression SEMICOLON TRPAREN code_block{
+		$$ = new ASTForExpression($5, $8, $3);
+	}
+	| FOR TLPAREN SEMICOLON compare_expression SEMICOLON TRPAREN code_block{
+		$$ = new ASTForExpression($4, $7);
+	}
 
 // 多行语句
 code_lines:
@@ -208,7 +214,7 @@ code_line:
 	| condition_exp{
 		$$ = $1;
 	}
-  | for_exp{
+   	| for_exp{
 		$$ = $1;
 	}
 	;
@@ -260,7 +266,7 @@ basic_expression:
 				number_str.push_back((*$1)[i]);
 			result = (char)atoi(number_str.c_str());
 		}
-		$$ = new ASTInteger(int(result));
+		$$ = new ASTChar(int(result));
 		// TODO: 是否有需要使用char的情况
 	}
 	| DOUBLE_CONSTANT {

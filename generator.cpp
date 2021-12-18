@@ -16,6 +16,10 @@ llvm::Value* ASTContext::generate_condition(llvm::Value* condori) {
     auto zero =
         llvm::ConstantInt::get(llvm::Type::getInt32Ty(*(context)), int(0));
     condinst = builder->CreateICmpNE(condori, zero);
+  } else if (condori->getType() == get_type(TYPE_CHAR)) {
+    auto zero =
+        llvm::ConstantInt::get(llvm::Type::getInt8Ty(*(context)), int(0));
+    condinst = builder->CreateICmpNE(condori, zero);
   } else if (condori->getType() == get_type(TYPE_FLOAT)) {
     auto zero =
         llvm::ConstantFP::get(llvm::Type::getFloatTy(*(context)), float(0.0));
@@ -47,7 +51,7 @@ llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
     return nullptr;
   }
   if (array_length > 0) {
-    auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
+    auto alloctype = llvm::ArrayType::get(get_type(type), array_length);
     auto var = builder->CreateAlloca(alloctype, nullptr, var_name);
     codestack.top()->add_symbol(var_name, var);
     return var;
@@ -64,10 +68,8 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getVoidTy(*(this->context));
   } else if (type == TYPE_INT) {
     return llvm::Type::getInt32Ty(*(this->context));
-  } else if (type == TYPE_CHAR) {  // TODO: char is integer
-    return llvm::Type::getInt32Ty(*(this->context));
-  } else if (type == TYPE_CHAR_PTR){
-    return llvm::Type::getInt8PtrTy(*(this->context));
+  } else if (type == TYPE_CHAR) {
+    return llvm::Type::getInt8Ty(*(this->context));
   } else if (type ==
              TYPE_DOUBLE) {  // TODO: 为了更简单的比较，强制它们都是Float
     return llvm::Type::getFloatTy(*(this->context));
@@ -172,6 +174,12 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
                                 this->value, true);  // true代表有符合整数
 }
 
+// generate char
+llvm::Value* ASTChar::generate(ASTContext* astcontext) {
+  return llvm::ConstantInt::get(llvm::Type::getInt8Ty(*(astcontext->context)),
+                                this->value, true);  // true代表有符合整数
+}
+
 // 返回一个变量的值。它只能被作为表达式的右值。
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
   auto var = astcontext->get_codestack_top()->get_symbol(
@@ -215,8 +223,8 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   //函数返回类型
   llvm::Type* returnType = astcontext->get_type(this->ret_type);
   //函数参数类型
-  std::vector<llvm::Type *> funcArgs;
-  for(auto item : this->args)
+  std::vector<llvm::Type*> funcArgs;
+  for (auto item : this->args)
     funcArgs.push_back(astcontext->get_type(item.first));
   //根据前两者构成函数类型
   llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, this->isVarArg);
@@ -225,24 +233,20 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   //设置参数名称
   auto F = astcontext->current_m->getFunction(this->name);
   unsigned idx = 0;
-  for (auto &Arg : F->args())
-    Arg.setName(this->args[idx++].second);
+  for (auto& Arg : F->args()) Arg.setName(this->args[idx++].second);
   // 把当前函数更新到上下文
   return astcontext->current_f = F;
 }
 
 llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
-  llvm::Function *TheFunc = astcontext->current_m->getFunction(
+  llvm::Function* TheFunc = astcontext->current_m->getFunction(
       this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
 
-  if (!TheFunc) 
-      this->prototype->generate(astcontext);  // 首先生成函数
+  if (!TheFunc) this->prototype->generate(astcontext);  // 首先生成函数
 
-  TheFunc = astcontext->current_m->getFunction(
-      this->prototype->get_name());
+  TheFunc = astcontext->current_m->getFunction(this->prototype->get_name());
 
-  if (!TheFunc) 
-    return nullptr;
+  if (!TheFunc) return nullptr;
 
   //将参数名称加入符号表
   unsigned int idx = 0;
@@ -288,8 +292,8 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
         return astcontext->builder->CreateSDiv(l_code, r_code);  // 有符号除法
       } else {
         // * 根据类型不同
-        if (r_code->getType() == astcontext->get_type(TYPE_INT)) {
-          // * also for TYPE_CHAR
+        if (r_code->getType() == astcontext->get_type(TYPE_INT) ||
+            r_code->getType() == astcontext->get_type(TYPE_CHAR)) {
           if (this->operation == OP_BI_LESS)
             return astcontext->builder->CreateICmpSLT(l_code, r_code);
           else if (this->operation == OP_BI_MORE)
