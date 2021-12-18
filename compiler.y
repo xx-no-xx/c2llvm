@@ -271,7 +271,7 @@ basic_expression:
 				number_str.push_back((*$1)[i]);
 			result = (char)atoi(number_str.c_str());
 		}
-		$$ = new ASTInteger(int(result));
+		$$ = new ASTChar(int(result));
 		// TODO: 是否有需要使用char的情况
 	}
 	| DOUBLE_CONSTANT {

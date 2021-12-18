@@ -46,8 +46,6 @@ class ASTContext {
       codeblock->copy_symbol_from(codestack.top()->get_symboltable());
     } else {
       codeblock->copy_symbol_from(global_symboltable);
-      for(auto item : local_symboltable)
-        codeblock->add_symbol(item.first, item.second);
     }
     codestack.push(codeblock);
   }

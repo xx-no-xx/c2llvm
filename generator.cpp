@@ -16,6 +16,10 @@ llvm::Value* ASTContext::generate_condition(llvm::Value* condori) {
     auto zero =
         llvm::ConstantInt::get(llvm::Type::getInt32Ty(*(context)), int(0));
     condinst = builder->CreateICmpNE(condori, zero);
+  } else if (condori->getType() == get_type(TYPE_CHAR)) {
+    auto zero =
+        llvm::ConstantInt::get(llvm::Type::getInt8Ty(*(context)), int(0));
+    condinst = builder->CreateICmpNE(condori, zero);
   } else if (condori->getType() == get_type(TYPE_FLOAT)) {
     auto zero =
         llvm::ConstantFP::get(llvm::Type::getFloatTy(*(context)), float(0.0));
@@ -47,7 +51,7 @@ llvm::Value* ASTContext::create_local_var(int type, std::string var_name,
     return nullptr;
   }
   if (array_length > 0) {
-    auto alloctype = llvm::ArrayType::get(get_type(TYPE_INT), array_length);
+    auto alloctype = llvm::ArrayType::get(get_type(type), array_length);
     auto var = builder->CreateAlloca(alloctype, nullptr, var_name);
     codestack.top()->add_symbol(var_name, var);
     return var;
@@ -64,8 +68,10 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getVoidTy(*(this->context));
   } else if (type == TYPE_INT) {
     return llvm::Type::getInt32Ty(*(this->context));
-  } else if (type == TYPE_CHAR) {  // TODO: char is integer
-    return llvm::Type::getInt32Ty(*(this->context));
+  } else if (type == TYPE_CHAR) {
+    return llvm::Type::getInt8Ty(*(this->context));
+  } else if (type == TYPE_CHAR_PTR) {
+    return llvm::Type::getInt8PtrTy(*(this->context));
   } else if (type ==
              TYPE_DOUBLE) {  // TODO: 为了更简单的比较，强制它们都是Float
     return llvm::Type::getFloatTy(*(this->context));
@@ -78,7 +84,24 @@ llvm::Type* ASTContext::get_type(int type) {
   }
   return nullptr;
 }
-
+/*
+int ASTContext::get_type(llvm::Type* type) {
+  if (type == llvm::Type::getVoidTy(*(this->context))) {
+    return TYPE_VOID;
+  } else if (type == llvm::Type::getInt32Ty(*(this->context))) {
+    return TYPE_INT;
+  } else if (type == llvm::Type::getInt8PtrTy(*(this->context))){
+    return TYPE_CHAR_PTR;
+  } else if (type == llvm::Type::getFloatTy(*(this->context))) { 
+    return TYPE_FLOAT;
+  } else if (type == llvm::Type::getInt1Ty(*(this->context))) {
+    return TYPE_BOOL;
+  } else if (type == llvm::Type::getInt32PtrTy(*(this->context))) {
+    return TYPE_INT_PTR;
+  }
+  return TYPE_INT;
+}
+*/
 /* ----------------- 生成代码 ----------------------- */
 
 llvm::Value* ASTPrototype::generate(ASTContext* astcontext) {
@@ -153,16 +176,30 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
                                 this->value, true);  // true代表有符合整数
 }
 
+// generate char
+llvm::Value* ASTChar::generate(ASTContext* astcontext) {
+  return llvm::ConstantInt::get(llvm::Type::getInt8Ty(*(astcontext->context)),
+                                this->value, true);  // true代表有符合整数
+}
+
 // 返回一个变量的值。它只能被作为表达式的右值。
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
   auto var = astcontext->get_codestack_top()->get_symbol(
       this->get_name());  // 获取符号表
-  auto var_load_name =
-      var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
-  auto var_load = astcontext->builder->CreateLoad(
-      var->getType()->getPointerElementType(), var,
-      var_load_name);  // 将它load为右值 xxx_load = load xxx
-  return var_load;
+  if (var != nullptr) {
+    auto var_load_name =
+        var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
+    auto var_load = astcontext->builder->CreateLoad(
+        var->getType()->getPointerElementType(), var,
+        var_load_name);  // 将它load为右值 xxx_load = load xxx
+    return var_load;
+  }else { // 参数
+    return astcontext->local_symboltable[this->get_name()];
+  }
+}
+
+llvm::Value* ASTGlobalStringExpression::generate(ASTContext* astcontext) {
+  return astcontext->builder->CreateGlobalStringPtr(this->Str);
 }
 
 // A = B的赋值语句IR生成
@@ -188,39 +225,37 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   //函数返回类型
   llvm::Type* returnType = astcontext->get_type(this->ret_type);
   //函数参数类型
-  std::vector<llvm::Type *> funcArgs;
-  for(auto item : this->args)
+  std::vector<llvm::Type*> funcArgs;
+  for (auto item : this->args)
     funcArgs.push_back(astcontext->get_type(item.first));
   //根据前两者构成函数类型
-  llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, false);
+  llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, this->isVarArg);
   //构造函数
   astcontext->current_m->getOrInsertFunction(this->name, FT);
   //设置参数名称
   auto F = astcontext->current_m->getFunction(this->name);
   unsigned idx = 0;
-  for (auto &Arg : F->args())
-    Arg.setName(this->args[idx++].second);
+  for (auto& Arg : F->args()) Arg.setName(this->args[idx++].second);
   // 把当前函数更新到上下文
   return astcontext->current_f = F;
 }
 
 llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
-  llvm::Function *TheFunc = astcontext->current_m->getFunction(
+  llvm::Function* TheFunc = astcontext->current_m->getFunction(
       this->prototype->get_name());  // 获取函数的名称, 尝试获取函数
 
-  if (!TheFunc) 
-      this->prototype->generate(astcontext);  // 首先生成函数
+  if (!TheFunc) this->prototype->generate(astcontext);  // 首先生成函数
 
-  TheFunc = astcontext->current_m->getFunction(
-      this->prototype->get_name());
+  TheFunc = astcontext->current_m->getFunction(this->prototype->get_name());
 
-  if (!TheFunc) 
-    return nullptr;
+  if (!TheFunc) return nullptr;
 
   //将参数名称加入符号表
+  unsigned int idx = 0;
   astcontext->local_symboltable.clear();
-  for (auto &Arg : TheFunc->args())
+  for (auto &Arg : TheFunc->args()) {
     astcontext->local_symboltable[std::string(Arg.getName())] = &Arg;
+  }
 
   // 如果codeblock顺利gen,
   // 它创造的bb会在函数的入口上。因为函数内部没有任何多余的bb了。
@@ -259,8 +294,8 @@ llvm::Value* ASTBinaryExpression::generate(ASTContext* astcontext) {
         return astcontext->builder->CreateSDiv(l_code, r_code);  // 有符号除法
       } else {
         // * 根据类型不同
-        if (r_code->getType() == astcontext->get_type(TYPE_INT)) {
-          // * also for TYPE_CHAR
+        if (r_code->getType() == astcontext->get_type(TYPE_INT) ||
+            r_code->getType() == astcontext->get_type(TYPE_CHAR)) {
           if (this->operation == OP_BI_LESS)
             return astcontext->builder->CreateICmpSLT(l_code, r_code);
           else if (this->operation == OP_BI_MORE)
@@ -320,14 +355,11 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
     return nullptr;
   }
 
-  if (func->arg_size() != this->args.size()) {
-    std::cout << "Incorrect # arguments passed" << std::endl;
-    return nullptr;
-  }
   //构造参数
   std::vector<llvm::Value*> putargs;
   for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
   //调用
+  std::cout << "args gen ok !" << std::endl;
   return astcontext->builder->CreateCall(func, putargs);
 }
 // todo: 操纵codeblock的实现顺序，导致codeblock中的符号表迁移异常？

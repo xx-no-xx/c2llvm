@@ -25,7 +25,7 @@ class
 // 函数相关
 class ASTFunctionProto;  // 函数原型
 class ASTFunctionImp;    // 函数实现
-class ASTCallExpresion;  // todo: 函数调用实现
+class ASTCallExpression;  // todo: 函数调用实现
 
 // 非数组/字符串变量相关
 class ASTVariableDefine;  // 变量定义的类，形如int a = b;
@@ -39,6 +39,8 @@ class ASTSingleExpression;  // 一元运算的类，取地址，取反
 
 // 常量
 class ASTInteger;  // int 常量，形如998244353
+class ASTGlobalStringExpression; // 字符串字面量
+class ASTChar; // char
 
 // 控制流
 class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition,
@@ -57,6 +59,7 @@ class ASTGeneralPrototype;   // not used: 预留
 #define TYPE_FLOAT 4
 #define TYPE_BOOL 5
 #define TYPE_INT_PTR 6
+#define TYPE_CHAR_PTR 7
 
 // [二元]运算符Define
 #define OP_BI_ADD 0
@@ -264,15 +267,17 @@ class ASTFunctionProto : public ASTPrototype {
   int ret_type;  // 返回类型
   std::string name; // 函数名
   std::vector<std::pair<int, ARGname> > args; 
+  bool isVarArg; //是否为可变长参数
  public:
   ASTFunctionProto(int _ret_type, std::string _name,
-                   std::vector<std::pair<int, ARGname> > _args)
-      : ret_type(_ret_type), name(_name), args(_args) {}
+                   std::vector<std::pair<int, ARGname> > _args, bool _isVarArg = 0)
+      : ret_type(_ret_type), name(_name), args(_args), isVarArg(_isVarArg) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTFunctionProto"; }
   std::string get_name(void) { return name; }
+  int get_type_argi(int i) { return args[i].first;}
   void debug(void) override {
-    for (auto arg : args) 
+    for (auto arg : args)
       std::cout << arg.first << " " << arg.second << std::endl;
     std::cout << "Function Prototype Name: " << name << std::endl;
   }
@@ -283,6 +288,7 @@ class ASTFunctionImp : public ASTExpression {
  private:
   ASTFunctionProto* prototype;
   ASTCodeBlockExpression* function_entry;
+
  public:
   ASTFunctionImp(ASTFunctionProto* _pro, ASTCodeBlockExpression* _entry)
       : prototype(_pro), function_entry(_entry) {}
@@ -302,6 +308,18 @@ class ASTInteger : public ASTExpression {
 
  public:
   ASTInteger(int _value) : value(_value) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  int get_value(void) { return value; }
+  std::string get_class_name(void) override { return "ASTInteger"; }
+  void debug(void) override { std::cout << "[INTEGER]" << value << " "; }
+};
+
+class ASTChar : public ASTExpression {
+ private:
+  int value;
+
+ public:
+  ASTChar(int _value) : value(_value) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   int get_value(void) { return value; }
   std::string get_class_name(void) override { return "ASTInteger"; }
@@ -443,6 +461,21 @@ class ASTForExpression : public ASTExpression {
     code->debug();
     std::cout << " }";
     std::cout << "[END FOR]";
+  }
+};
+
+class ASTGlobalStringExpression : public ASTExpression {
+  // 字符串字面量
+ private:
+  std::string Str;
+
+ public:
+  ASTGlobalStringExpression(std::string _Str)
+      : Str(_Str){}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  std::string get_class_name(void) override { return "ASTStringExpression"; }
+  void debug(void) override {
+    std::cout << Str << std::endl;
   }
 };
 

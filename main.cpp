@@ -27,7 +27,38 @@ void test_ast(ASTContext* context) {
   // 造一个空的函数参数列表
   std::vector<std::pair<int, ARGname> > args;
   args.clear();
+  // 造printf
+  args.push_back(std::make_pair(TYPE_CHAR_PTR, "s"));
+  auto print = new ASTFunctionProto(TYPE_INT, "printf", args, true);
+  print->generate(context);
+  args.clear();
+  //造add
+  args.push_back(std::make_pair(TYPE_INT, "a"));
+  args.push_back(std::make_pair(TYPE_INT, "b"));
+  auto funcadd = new ASTFunctionProto(TYPE_VOID, "add", args);
+  auto addentry = new ASTCodeBlockExpression();
+  auto addimp = new ASTFunctionImp(funcadd, addentry);
+  //c=a+b
+  auto a = new ASTVariableExpression("a");
+  auto b = new ASTVariableExpression("b");
+  auto c = new ASTVariableExpression("c");
+  auto calc = new ASTBinaryExpression(OP_BI_ADD, a, b);
+  auto defc = new ASTVariableDefine(TYPE_INT, c, nullptr);  
+  auto assignc = new ASTVariableAssign(c, calc);
+  addentry->append_code(defc);
+  addentry->append_code(assignc);
+  //造字符串
 
+  //call printf
+  std::vector<ASTExpression *> printArgs;
+  auto formatStr = new ASTGlobalStringExpression("%d\n");
+  printArgs.push_back(formatStr);
+  printArgs.push_back(c);
+  auto callprint = new ASTCallExpression("printf", printArgs);
+  addentry->append_code(callprint);
+  //args
+  addimp->generate(context);
+  args.clear();
   // 造一个函数原型
   auto funcproto = new ASTFunctionProto(TYPE_VOID, "main", args);
 
@@ -54,13 +85,19 @@ void test_ast(ASTContext* context) {
 
   auto x1 = new ASTArrayExpression("x", integer);  // x[1]
 
-  auto assexp = new ASTArrayAssign(x1, integer2);  // x[1] = 200;
+  auto assexp = new ASTArrayAssign(x1, integer2);  // x[1] = 97;
   entry->append_code(assexp);
 
-  auto x2 = new ASTArrayExpression("x", integer3);  // x[1]
-  auto ass2exp = new ASTArrayAssign(x2, x1);
-
+  auto x2 = new ASTArrayExpression("x", integer3);  // x[2]
+  auto ass2exp = new ASTArrayAssign(x2, x1); //x[2] = x[1]
   entry->append_code(ass2exp);
+
+  vector<ASTExpression* >Args;
+  Args.clear();
+  Args.push_back(static_cast<ASTExpression*>(x1));
+  Args.push_back(static_cast<ASTExpression*>(x2));
+  auto callAdd = new ASTCallExpression("add", Args);
+  entry->append_code(callAdd);
 
   /*
     // 将它定义出来，值为上述的加法表达式
