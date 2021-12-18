@@ -52,14 +52,15 @@
 //  std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int
   	int type;
 	std::vector<ASTExpression*> *expression_list;	// 多行代码
+	std::vector<std::pair<int, std::string> > *var_list;	// 参数列表
 }
 
-%token <type> INT CHAR DOUBLE VOID
+%token <type> INT CHAR DOUBLE VOID CHAR_PTR
 %token <type> TADD TSUB TMUL TDIV TMOD TLSFT TRSFT TBIT_OR TBIT_AND TBIT_XOR TBIT_NOT
 %token <type> TAND TOR TCEQ TCNE TCLT TCLE TCGT TCGE
 %token <type> TLPAREN TRPAREN TLBRACKET TRBRACKET TLBRACE TRBRACE
 %token <type> TCR TCOMMA TDOT
-%token <type> IF ELSE WHILE BREAK CONTINUE RETURN FOR
+%token <type> IF ELSE WHILE BREAK CONTINUE RETURN FOR VARARG
 %token <type> ASSIGN SEMICOLON
 %token <int_value> INT_CONSTANT
 %token <str_value> IDENTIFIER STR_CONSTANT
@@ -69,14 +70,15 @@
 
 // 非终结符
 %type <CodeBlock> entry areas area code_block  for_assign_block
-%type <function_proto> function_prototype // 函数声明
+%type <function_proto> function_prototype function_declaration// 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
 %type <array_identifier>  array_with_index_name // 形如x[i]的带索引数组变量
 %type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression 
 %type <expression> logic_expression logic_and_expression
 %type <expression> code_line assign_line
-%type <expression_list> code_lines
+%type <expression_list> code_lines 
+%type <var_list> arg_list
 %type <variable_define> var_defination
 %type <type> type_specifier
 %type <expression> condition_exp  for_exp loop_exp 
@@ -121,28 +123,59 @@ areas: area {$$ = new ASTCodeBlockExpression();
 	;
 
 area: function_implementation {
-		pass();/* dosomething */
+		$$ = new ASTCodeBlockExpression();
+		$$->append_code($1);
 	}
-	| function_prototype {
-		pass();/* dosomething */
+	| function_declaration {
+		$$ = new ASTCodeBlockExpression();
+		$$->append_code($1);
 	}
 	;
 // | global_variable SEMICOLON {/* dosomething */}
 // TODO: 全局变量声明 global_variable : { /* dosomething */ }
 
+// 函数声明 int bar(int a, int b);
+function_declaration: function_prototype SEMICOLON{
+	// 放进一张声明表？
 
-function_prototype : type_specifier var_name TLPAREN TRPAREN SEMICOLON{
-	$$ = nullptr;
-	std::cout << "proto matched" << std::endl;
-	}
-	;
+}
 
+// 函数实现 int bar(int a, int b){...}
 function_implementation: 
-	code_block {
+	function_prototype code_block {
 		// 暂时这么写，不支持函数
+		$$ = new ASTFunctionImp($1, $2);
 		std::cout << "func_imple" << std::endl;
 	}
 //	| test_expression
+	;
+
+// 函数原型 int foo(int a, int b)
+function_prototype : 
+	type_specifier var_name TLPAREN TRPAREN{
+		$$ = new ASTFunctionProto($1, $2->get_name(), 
+		std::vector<std::pair<int, std::string> >());
+		std::cout << "proto empty matched" << std::endl;
+	}
+	| type_specifier var_name TLPAREN arg_list TRPAREN{
+		$$ = new ASTFunctionProto($1, $2->get_name(), *$4);
+		std::cout << "proto list matched" << std::endl;
+	}
+	| type_specifier var_name TLPAREN arg_list TCOMMA VARARG TRPAREN{
+		$$ = new ASTFunctionProto($1, $2->get_name(), *$4, true);
+		std::cout << "proto vararg matched" << std::endl;
+	}
+	;
+
+// 参数列表
+arg_list: 
+	type_specifier var_name {
+		$$ = new std::vector<std::pair<int, std::string> >();
+		$$->push_back(std::make_pair($1, $2->get_name()));
+	}
+	| arg_list TCOMMA type_specifier var_name {
+		$1->push_back(std::make_pair($3, $4->get_name()));
+	}
 	;
 
 // 代码块，即被两个大括号之间括起来的部分
@@ -249,7 +282,7 @@ var_defination:
 	// char a[10] = "abc";
 	| CHAR var_name TLBRACKET INT_CONSTANT TRBRACKET ASSIGN STR_CONSTANT SEMICOLON {
 		$2->set_array($4);
-		$$ = new ASTVaribleDefine($1, $2, )
+//		$$ = new ASTVaribleDefine($1, $2, ASTGlobalStringExpression(*$7));
 	}
 	;
 
@@ -391,6 +424,7 @@ type_specifier:
 	| INT {$$ = TYPE_INT; }
 	| CHAR {$$ = TYPE_CHAR; }
 	| DOUBLE {$$ = TYPE_DOUBLE; }
+	| CHAR_PTR {$$ = TYPE_CHAR_PTR; }
 	;
 
 

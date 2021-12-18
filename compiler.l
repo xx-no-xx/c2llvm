@@ -69,11 +69,13 @@ void save_value(std::string str);
 "break"		{ save_type("BREAK"); return BREAK; }
 "continue"	{ save_type("CONTINUE"); return CONTINUE; }
 "return"	{ save_type("RETURN"); return RETURN; }
+"..."		{ save_type("VARARG"); return VARARG; }
 
 "int" 		{ save_type("INT"); return INT; } // int标识符
 "char"		{ save_type("CHAR"); return CHAR; }
 "double"	{ save_type("DOUBLE"); return DOUBLE; }
 "void"		{ save_type("VOID"); return VOID; }
+"char*"		{ save_type("CHAR_PTR"); return CHAR_PTR;}
 
 {D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } // TODO: 修改为正确的正则表达式
 
