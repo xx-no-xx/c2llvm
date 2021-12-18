@@ -70,6 +70,8 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getInt32Ty(*(this->context));
   } else if (type == TYPE_CHAR) {
     return llvm::Type::getInt8Ty(*(this->context));
+  } else if (type == TYPE_CHAR_PTR) {
+    return llvm::Type::getInt8PtrTy(*(this->context));
   } else if (type ==
              TYPE_DOUBLE) {  // TODO: 为了更简单的比较，强制它们都是Float
     return llvm::Type::getFloatTy(*(this->context));
