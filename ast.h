@@ -39,6 +39,7 @@ class ASTSingleExpression;  // 一元运算的类，取地址，取反
 
 // 常量
 class ASTInteger;  // int 常量，形如998244353
+class ASTChar; // char
 
 // 控制流
 class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition,
@@ -261,9 +262,10 @@ typedef std::string ARGname;          // 参数名称
 class ASTFunctionProto : public ASTPrototype {
   // 声明了一个形如ret_type name(args)的函数
  private:
-  int ret_type;  // 返回类型
-  std::string name; // 函数名
-  std::vector<std::pair<int, ARGname> > args; 
+  int ret_type;      // 返回类型
+  std::string name;  // 函数名
+  std::vector<std::pair<int, ARGname> > args;
+
  public:
   ASTFunctionProto(int _ret_type, std::string _name,
                    std::vector<std::pair<int, ARGname> > _args)
@@ -272,7 +274,7 @@ class ASTFunctionProto : public ASTPrototype {
   std::string get_class_name(void) override { return "ASTFunctionProto"; }
   std::string get_name(void) { return name; }
   void debug(void) override {
-    for (auto arg : args) 
+    for (auto arg : args)
       std::cout << arg.first << " " << arg.second << std::endl;
     std::cout << "Function Prototype Name: " << name << std::endl;
   }
@@ -283,6 +285,7 @@ class ASTFunctionImp : public ASTExpression {
  private:
   ASTFunctionProto* prototype;
   ASTCodeBlockExpression* function_entry;
+
  public:
   ASTFunctionImp(ASTFunctionProto* _pro, ASTCodeBlockExpression* _entry)
       : prototype(_pro), function_entry(_entry) {}
@@ -302,6 +305,18 @@ class ASTInteger : public ASTExpression {
 
  public:
   ASTInteger(int _value) : value(_value) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  int get_value(void) { return value; }
+  std::string get_class_name(void) override { return "ASTInteger"; }
+  void debug(void) override { std::cout << "[INTEGER]" << value << " "; }
+};
+
+class ASTChar : public ASTExpression {
+ private:
+  int value;
+
+ public:
+  ASTChar(int _value) : value(_value) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   int get_value(void) { return value; }
   std::string get_class_name(void) override { return "ASTInteger"; }
