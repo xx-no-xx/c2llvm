@@ -66,6 +66,8 @@ llvm::Type* ASTContext::get_type(int type) {
     return llvm::Type::getInt32Ty(*(this->context));
   } else if (type == TYPE_CHAR) {  // TODO: char is integer
     return llvm::Type::getInt32Ty(*(this->context));
+  } else if (type == TYPE_CHAR_PTR){
+    return llvm::Type::getInt8PtrTy(*(this->context));
   } else if (type ==
              TYPE_DOUBLE) {  // TODO: 为了更简单的比较，强制它们都是Float
     return llvm::Type::getFloatTy(*(this->context));
@@ -78,7 +80,24 @@ llvm::Type* ASTContext::get_type(int type) {
   }
   return nullptr;
 }
-
+/*
+int ASTContext::get_type(llvm::Type* type) {
+  if (type == llvm::Type::getVoidTy(*(this->context))) {
+    return TYPE_VOID;
+  } else if (type == llvm::Type::getInt32Ty(*(this->context))) {
+    return TYPE_INT;
+  } else if (type == llvm::Type::getInt8PtrTy(*(this->context))){
+    return TYPE_CHAR_PTR;
+  } else if (type == llvm::Type::getFloatTy(*(this->context))) { 
+    return TYPE_FLOAT;
+  } else if (type == llvm::Type::getInt1Ty(*(this->context))) {
+    return TYPE_BOOL;
+  } else if (type == llvm::Type::getInt32PtrTy(*(this->context))) {
+    return TYPE_INT_PTR;
+  }
+  return TYPE_INT;
+}
+*/
 /* ----------------- 生成代码 ----------------------- */
 
 llvm::Value* ASTPrototype::generate(ASTContext* astcontext) {
@@ -157,12 +176,20 @@ llvm::Value* ASTInteger::generate(ASTContext* astcontext) {
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
   auto var = astcontext->get_codestack_top()->get_symbol(
       this->get_name());  // 获取符号表
-  auto var_load_name =
-      var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
-  auto var_load = astcontext->builder->CreateLoad(
-      var->getType()->getPointerElementType(), var,
-      var_load_name);  // 将它load为右值 xxx_load = load xxx
-  return var_load;
+  if (var != nullptr) {
+    auto var_load_name =
+        var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
+    auto var_load = astcontext->builder->CreateLoad(
+        var->getType()->getPointerElementType(), var,
+        var_load_name);  // 将它load为右值 xxx_load = load xxx
+    return var_load;
+  }else { // 参数
+    return astcontext->local_symboltable[this->get_name()];
+  }
+}
+
+llvm::Value* ASTGlobalStringExpression::generate(ASTContext* astcontext) {
+  return astcontext->builder->CreateGlobalStringPtr(this->Str);
 }
 
 // A = B的赋值语句IR生成
@@ -192,7 +219,7 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   for(auto item : this->args)
     funcArgs.push_back(astcontext->get_type(item.first));
   //根据前两者构成函数类型
-  llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, false);
+  llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, this->isVarArg);
   //构造函数
   astcontext->current_m->getOrInsertFunction(this->name, FT);
   //设置参数名称
@@ -218,9 +245,11 @@ llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
     return nullptr;
 
   //将参数名称加入符号表
+  unsigned int idx = 0;
   astcontext->local_symboltable.clear();
-  for (auto &Arg : TheFunc->args())
+  for (auto &Arg : TheFunc->args()) {
     astcontext->local_symboltable[std::string(Arg.getName())] = &Arg;
+  }
 
   // 如果codeblock顺利gen,
   // 它创造的bb会在函数的入口上。因为函数内部没有任何多余的bb了。
@@ -320,14 +349,11 @@ llvm::Value* ASTCallExpression::generate(ASTContext* astcontext) {
     return nullptr;
   }
 
-  if (func->arg_size() != this->args.size()) {
-    std::cout << "Incorrect # arguments passed" << std::endl;
-    return nullptr;
-  }
   //构造参数
   std::vector<llvm::Value*> putargs;
   for (auto arg : this->args) putargs.push_back(arg->generate(astcontext));
   //调用
+  std::cout << "args gen ok !" << std::endl;
   return astcontext->builder->CreateCall(func, putargs);
 }
 // todo: 操纵codeblock的实现顺序，导致codeblock中的符号表迁移异常？
