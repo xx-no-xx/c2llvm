@@ -62,7 +62,7 @@
 %token <type> IF ELSE WHILE BREAK CONTINUE RETURN FOR
 %token <type> ASSIGN SEMICOLON
 %token <int_value> INT_CONSTANT
-%token <str_value> IDENTIFIER
+%token <str_value> IDENTIFIER STR_CONSTANT
 %token <char_value> CHAR_CONSTANT
 %token <double_value> DOUBLE_CONSTANT
 // %token <xxx> 制定token从yylval.xxx获取
@@ -246,6 +246,11 @@ var_defination:
 		$2->set_array($4);
 		$$ = new ASTVariableDefine($1, $2, nullptr);
 	}
+	// char a[10] = "abc";
+	| CHAR var_name TLBRACKET INT_CONSTANT TRBRACKET ASSIGN STR_CONSTANT SEMICOLON {
+		$2->set_array($4);
+		$$ = new ASTVaribleDefine($1, $2, )
+	}
 	;
 
 // 基本表达式，如变量名、常量
@@ -286,15 +291,15 @@ postfix_expression:
 // 一元表达式，如a!, *a，目前等价于后缀表达式
 primary_expression:
 	postfix_expression {$$ = $1;}
-| TBIT_NOT postfix_expression {
+	| TBIT_NOT postfix_expression {
 		$$ = new ASTSingleExpression(OP_SI_NOT, $2);
 		std::cout << "not" << $2->get_class_name() << std::endl;
 	}
-| TBIT_AND postfix_expression {
+	| TBIT_AND postfix_expression {
 		$$ = new ASTSingleExpression(OP_SI_ADDRESS, $2);
 		std::cout << "address" << $2->get_class_name() << std::endl;
 	}
-;
+	;
 
 // 所有的计算式，都可分解为和式的加减
 calculate_expression:

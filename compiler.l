@@ -84,6 +84,12 @@ void save_value(std::string str);
     return CHAR_CONSTANT;
 }	// 字符
 
+\"(\\.|[^\\"])*\" {
+	yylval.str_value = new std::string(yytext);
+	std::cout << "string: " << yytext << std::endl;
+	return STR_CONSTANT;
+}
+
 {L}({L}|{D})* { save_value("IDENTIFIER"); return IDENTIFIER; }
 
 ([1-9][0-9]*)|0|([0-9]+\.[0-9]*) {
