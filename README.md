@@ -2,6 +2,8 @@
 
 支持basic.c和basic2.c的语法
 
+生成json到output.json
+
 __建议不要把lex和yacc输出的东西扔上来__
 
 ## 项目结构：

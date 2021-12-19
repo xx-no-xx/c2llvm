@@ -194,6 +194,7 @@ void test_ast(ASTContext* context) {
 void test_gen(ASTContext* context) {
   entryCodeBlock->generate_from_root(context);
   entryCodeBlock->debug();
+  json_result = entryCodeBlock->generate_json();
 }
 
 int main(int argc, char** argv) {
