@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "json/json.h"
+
 // 环境
 class ASTContext;  // 用于存储当前语法分析树的上下文信息
 
@@ -23,8 +25,8 @@ class
                              // 生成从entryBB->exitBB的一大长段，如果check_return()==True,那么没有exitBB，在这里就全部返回了。
 
 // 函数相关
-class ASTFunctionProto;  // 函数原型
-class ASTFunctionImp;    // 函数实现
+class ASTFunctionProto;   // 函数原型
+class ASTFunctionImp;     // 函数实现
 class ASTCallExpression;  // todo: 函数调用实现
 
 // 非数组/字符串变量相关
@@ -38,9 +40,9 @@ class ASTBinaryExpression;  // 二元运算的类，形如 a + 1 [不包括赋�
 class ASTSingleExpression;  // 一元运算的类，取地址，取反
 
 // 常量
-class ASTInteger;  // int 常量，形如998244353
-class ASTGlobalStringExpression; // 字符串字面量
-class ASTChar; // char
+class ASTInteger;                 // int 常量，形如998244353
+class ASTGlobalStringExpression;  // 字符串字面量
+class ASTChar;                    // char
 
 // 控制流
 class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition,
@@ -264,18 +266,19 @@ typedef std::string ARGname;          // 参数名称
 class ASTFunctionProto : public ASTPrototype {
   // 声明了一个形如ret_type name(args)的函数
  private:
-  int ret_type;  // 返回类型
-  std::string name; // 函数名
-  std::vector<std::pair<int, ARGname> > args; 
-  bool isVarArg; //是否为可变长参数
+  int ret_type;      // 返回类型
+  std::string name;  // 函数名
+  std::vector<std::pair<int, ARGname> > args;
+  bool isVarArg;  //是否为可变长参数
  public:
   ASTFunctionProto(int _ret_type, std::string _name,
-                   std::vector<std::pair<int, ARGname> > _args, bool _isVarArg = 0)
+                   std::vector<std::pair<int, ARGname> > _args,
+                   bool _isVarArg = 0)
       : ret_type(_ret_type), name(_name), args(_args), isVarArg(_isVarArg) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTFunctionProto"; }
   std::string get_name(void) { return name; }
-  int get_type_argi(int i) { return args[i].first;}
+  int get_type_argi(int i) { return args[i].first; }
   void debug(void) override {
     for (auto arg : args)
       std::cout << arg.first << " " << arg.second << std::endl;
@@ -470,13 +473,10 @@ class ASTGlobalStringExpression : public ASTExpression {
   std::string Str;
 
  public:
-  ASTGlobalStringExpression(std::string _Str)
-      : Str(_Str){}
+  ASTGlobalStringExpression(std::string _Str) : Str(_Str) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTStringExpression"; }
-  void debug(void) override {
-    std::cout << Str << std::endl;
-  }
+  void debug(void) override { std::cout << Str << std::endl; }
 };
 
 class ASTArrayExpression : public ASTExpression {
