@@ -106,11 +106,6 @@ class ASTNode {
   virtual void debug() {
     std::cout << "this is " << get_class_name() << std::endl;
   }
-  /*
-  TODO:
-    json化AST
-    virtual getjson(void);
-  */
 };
 
 class ASTExpression : public ASTNode {
@@ -160,8 +155,7 @@ class ASTCodeBlockExpression : public ASTExpression {
   //代码块对应的基本块集合共享这些变量。因此，这些变量在实际IR实现中要被放在最前面。
   llvm::Value* get_symbol(std::string);  // 获取该名称的符号表
   void generate_from_root(ASTContext* astcontext) {
-    for(auto& code: codes) {
-      std::cout << code->get_class_name() << std::endl;
+    for (auto& code : codes) {
       code->generate(astcontext);
     }
   }
@@ -178,9 +172,12 @@ class ASTCodeBlockExpression : public ASTExpression {
     v["attr"] = njson();
     v["attr"]["class"] = get_class_name();
 
-    v["child"] = {};
+    v["child"] = njson();
+    int count = 0;
     for (auto& code : codes) {
-      v["child"].push_back(code->generate_json());
+      v["child"][count] =
+          code->generate_json();
+      count++;
     }
     return v;
   }
@@ -219,7 +216,7 @@ class ASTVariableExpression : public ASTExpression {
     v["attr"]["is_array"] = is_array;
     v["attr"]["array_length"] = array_length;
     v["child"] = njson();
-     return v;
+    return v;
   }
 };
 
@@ -315,12 +312,14 @@ class ASTFunctionProto : public ASTExpression {
     v["attr"]["class"] = get_class_name();
     v["attr"]["name"] = get_name();
     v["attr"]["is_var_arg"] = isVarArg;
-    v["child"] = {};
+    v["child"] = njson();
+    int count = 0;
     for (auto& arg : args) {
       njson x;
       x["argtype"] = getDefineStr(1, arg.first);
       x["argname"] = arg.second;
-      v["child"].push_back(x);
+      v["child"][count] = (x);
+      count++;
     }
     return v;
   }
@@ -346,8 +345,8 @@ class ASTFunctionImp : public ASTExpression {
     njson v;
     v["attr"] = njson();
     v["child"] = njson();
-    v["attr"]["proto"] = prototype->generate_json();
     v["attr"]["class"] = get_class_name();
+    v["child"]["proto"] = prototype->generate_json();
     if (function_entry) v["attr"]["code"] = function_entry->generate_json();
     return v;
   }
@@ -467,9 +466,11 @@ class ASTCallExpression : public ASTExpression {
     v["attr"] = njson();
     v["attr"]["callee"] = callee;
     v["attr"]["class"] = get_class_name();
-    v["child"] = {};
+    v["child"] = njson();
+    int count = 0;
     for (auto& e : args) {
-      v["child"].push_back(e->generate_json());
+      v["child"][count] = e->generate_json();
+      count++;
     }
     return v;
   }
