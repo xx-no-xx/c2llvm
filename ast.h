@@ -175,8 +175,7 @@ class ASTCodeBlockExpression : public ASTExpression {
     v["child"] = njson();
     int count = 0;
     for (auto& code : codes) {
-      v["child"][count] =
-          code->generate_json();
+      v["child"][count] = code->generate_json();
       count++;
     }
     return v;
@@ -243,8 +242,8 @@ class ASTVariableAssign : public ASTExpression {
     v["attr"] = njson();
     v["child"] = njson();
     v["attr"]["class"] = get_class_name();
-    v["child"]["lhs"] = lhs->generate_json();
-    v["child"]["rhs"] = rhs->generate_json();
+    v["child"][0] = lhs->generate_json();
+    v["child"][1] = rhs->generate_json();
     return v;
   }
 };
@@ -276,8 +275,8 @@ class ASTVariableDefine : public ASTExpression {
     v["child"] = njson();
     v["attr"]["type"] = getDefineStr(1, type);
     v["attr"]["class"] = get_class_name();
-    v["child"]["lhs"] = lhs->generate_json();
-    if (rhs) v["child"]["rhs"] = rhs->generate_json();
+    v["child"][0] = lhs->generate_json();
+    if (rhs) v["child"][1] = rhs->generate_json();
     return v;
   }
 };
@@ -346,8 +345,8 @@ class ASTFunctionImp : public ASTExpression {
     v["attr"] = njson();
     v["child"] = njson();
     v["attr"]["class"] = get_class_name();
-    v["child"]["proto"] = prototype->generate_json();
-    if (function_entry) v["attr"]["code"] = function_entry->generate_json();
+    v["child"][0] = prototype->generate_json();
+    if (function_entry) v["child"][1] = function_entry->generate_json();
     return v;
   }
 };
@@ -416,8 +415,8 @@ class ASTBinaryExpression : public ASTExpression {
     v["child"] = njson();
     v["attr"]["operation"] = getDefineStr(0, operation);
     v["attr"]["class"] = get_class_name();
-    v["child"]["lhs"] = lhs->generate_json();
-    v["child"]["rhs"] = rhs->generate_json();
+    v["child"][0] = lhs->generate_json();
+    v["child"][1] = rhs->generate_json();
     return v;
   }
 };
@@ -443,7 +442,7 @@ class ASTSingleExpression : public ASTExpression {
     v["child"] = njson();
     v["attr"]["operation"] = getDefineStr(0, operation);
     v["attr"]["class"] = get_class_name();
-    v["child"]["exp"] = exp->generate_json();
+    v["child"][0] = exp->generate_json();
     return v;
   }
 };
@@ -506,11 +505,11 @@ class ASTIfExpression : public ASTExpression {
   njson generate_json(void) override {
     njson v;
     v["attr"] = njson();
-    v["attr"]["condition"] = condition->generate_json();
+    v["child"][0] = condition->generate_json();
     v["attr"]["class"] = get_class_name();
     v["child"] = njson();
-    v["child"]["ifcode"] = ifcode->generate_json();
-    v["child"]["elsecode"] = elsecode->generate_json();
+    v["child"][1] = ifcode->generate_json();
+    v["child"][2] = elsecode->generate_json();
     return v;
   }
 };
@@ -537,10 +536,10 @@ class ASTWhileExpression : public ASTExpression {
   njson generate_json(void) override {
     njson v;
     v["attr"] = njson();
-    v["attr"]["condition"] = condition->generate_json();
+    v["child"][0] = condition->generate_json();
     v["attr"]["class"] = get_class_name();
     v["child"] = njson();
-    v["child"]["code"] = code->generate_json();
+    v["child"][1] = code->generate_json();
     return v;
   }
 };
@@ -580,12 +579,12 @@ class ASTForExpression : public ASTExpression {
   njson generate_json(void) override {
     njson v;
     v["attr"] = njson();
-    v["attr"]["prepare"] = prepare->generate_json();
-    v["attr"]["condition"] = condition->generate_json();
-    v["attr"]["action"] = action->generate_json();
-    v["attr"]["class"] = get_class_name();
     v["child"] = njson();
-    v["child"]["code"] = code->generate_json();
+    v["child"][0] = prepare->generate_json();
+    v["child"][1] = condition->generate_json();
+    v["child"][2] = action->generate_json();
+    v["attr"]["class"] = get_class_name();
+    v["child"][3] = code->generate_json();
     return v;
   }
 };
@@ -632,7 +631,7 @@ class ASTArrayExpression : public ASTExpression {
     njson v;
     v["attr"] = njson();
     v["attr"]["name"] = get_name();
-    v["attr"]["index"] = index->generate_json();
+    v["child"][0] = index->generate_json();
     v["attr"]["class"] = get_class_name();
     v["child"] = njson();
     return v;
@@ -660,8 +659,8 @@ class ASTArrayAssign : public ASTExpression {
     v["attr"] = njson();
     v["attr"]["class"] = get_class_name();
     v["child"] = njson();
-    v["child"]["lhs"] = lhs->generate_json();
-    v["child"]["rhs"] = rhs->generate_json();
+    v["child"][0] = lhs->generate_json();
+    v["child"][1] = rhs->generate_json();
     return v;
   }
 };
