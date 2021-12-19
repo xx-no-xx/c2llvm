@@ -9,6 +9,7 @@
 	void pass(); // pass : 啥也不干
 
 	ASTCodeBlockExpression* entryCodeBlock; // entry的"基本块"
+	std::vector<ASTFunctionProto*> functionDeclarations;
 
 	void yyerror(const char* s) { // 用来报错
 		printf("ERROR-IN-YACC: %s\n", s);
@@ -44,6 +45,7 @@
 	ASTPrototype* statement; // 声明
 	ASTVariableDefine* variable_define; // 变量的定义，形如int x = 1;
 	ASTVariableExpression* identifier;	// 变量名
+	ASTCallExpression* func_identifier;
 	ASTArrayExpression* array_identifier;
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
@@ -74,9 +76,10 @@
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
 %type <array_identifier>  array_with_index_name // 形如x[i]的带索引数组变量
+/* %type <func_identifier> func_with_args			// 形如foo(a, b)的函数调用 */
 %type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression 
 %type <expression> logic_expression logic_and_expression
-%type <expression> code_line assign_line
+%type <expression> code_line assign_line func_call_exp
 %type <expression_list> code_lines 
 %type <var_list> arg_list
 %type <variable_define> var_defination
@@ -137,7 +140,7 @@ area: function_implementation {
 // 函数声明 int bar(int a, int b);
 function_declaration: function_prototype SEMICOLON{
 	// 放进一张声明表？
-
+	functionDeclarations.push_back($1); 
 }
 
 // 函数实现 int bar(int a, int b){...}
@@ -250,6 +253,21 @@ code_line:
    	| for_exp{
 		$$ = $1;
 	}
+	| func_call_exp{
+		$$ = $1;
+	}
+	;
+
+// 函数调用行
+func_call_exp:
+/*	var_name TLPAREN call_list TRPAREN SEMICOLON {
+		$$ = new ASTCallExpression($1->get_name(), *$3);
+	}
+	| */var_name TLPAREN TRPAREN SEMICOLON {
+		$$ = new ASTCallExpression($1->get_name(), 
+		std::vector<ASTExpression*>());
+		std::cout << "function without args" << std::endl;
+	}
 	;
 
 // 赋值运算行
@@ -280,10 +298,10 @@ var_defination:
 		$$ = new ASTVariableDefine($1, $2, nullptr);
 	}
 	// char a[10] = "abc";
-	| CHAR var_name TLBRACKET INT_CONSTANT TRBRACKET ASSIGN STR_CONSTANT SEMICOLON {
+/*	| CHAR var_name TLBRACKET INT_CONSTANT TRBRACKET ASSIGN STR_CONSTANT SEMICOLON {
 		$2->set_array($4);
 //		$$ = new ASTVaribleDefine($1, $2, ASTGlobalStringExpression(*$7));
-	}
+	}*/
 	;
 
 // 基本表达式，如变量名、常量
@@ -310,6 +328,9 @@ basic_expression:
 	| DOUBLE_CONSTANT {
 		// TODO: $$ = new ASTDoubleExpression($1);
 	}
+	| STR_CONSTANT {
+		$$ = new ASTGlobalStringExpression(*$1);
+	}
 	;
 
 // 后缀表达式，如a, a[10], foo(a, b)，目前仅有数组
@@ -319,6 +340,9 @@ postfix_expression:
 		$$ = $1;
 		std::cout << "postfix: array" << std::endl;
 	}
+	/* | func_with_args {
+		$$ = $1;
+	} */
 	;
 
 // 一元表达式，如a!, *a，目前等价于后缀表达式
@@ -404,10 +428,13 @@ assign_expression:
 	}
 	;
 
+// a[10]
 array_with_index_name:
 	IDENTIFIER TLBRACKET calculate_expression TRBRACKET {
 		$$ = new ASTArrayExpression(*$1, $3);
 	}
+
+
 
 for_assign_block:
 	assign_expression{
