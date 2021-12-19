@@ -53,8 +53,13 @@ echo "llvm path ok"
   - 添加xxxxx/llvm-project-13.0.0.src/build/lib
   - 具体参考：https://blog.csdn.net/david_xtd/article/details/7625626
 
-
-
+- 可视化库的安装
+  - 依赖库
+    - pip install pygraphviz
+    - pip install pydot
+  - xdg
+    - sudo apt-get install xdg-utils
+  
 ## 项目使用
 编译：
 ```
