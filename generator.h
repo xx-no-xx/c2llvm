@@ -32,7 +32,7 @@ class ASTContext {
 
   ASTContext() {
     context = new llvm::LLVMContext();
-    current_m = new llvm::Module("foo_module", *context);
+    current_m = new llvm::Module("module", *context);
     builder = new llvm::IRBuilder<>(*context);
     current_f = nullptr;
     global_symboltable.clear();

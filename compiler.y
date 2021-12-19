@@ -71,7 +71,7 @@
 // %token <xxx> 制定token从yylval.xxx获取
 
 // 非终结符
-%type <CodeBlock> entry areas area code_block  for_assign_block
+%type <CodeBlock> entry areas code_block  for_assign_block
 %type <function_proto> function_prototype function_declaration// 函数声明
 %type <function_imp> function_implementation // 函数实现
 %type <identifier> var_name
@@ -84,7 +84,7 @@
 %type <var_list> arg_list
 %type <variable_define> var_defination
 %type <type> type_specifier
-%type <expression> condition_exp  for_exp loop_exp 
+%type <expression> condition_exp  for_exp loop_exp  area
 // 表示这些非终结符，应该从哪里获取yylval
 
 %start entry // 最开始的规则
@@ -126,12 +126,14 @@ areas: area {$$ = new ASTCodeBlockExpression();
 	;
 
 area: function_implementation {
-		$$ = new ASTCodeBlockExpression();
-		$$->append_code($1);
+		$$ = $1;
+		//new ASTCodeBlockExpression();
+//		$$->append_code($1);
 	}
 	| function_declaration {
-		$$ = new ASTCodeBlockExpression();
-		$$->append_code($1);
+		$$ = $1;
+		//new ASTCodeBlockExpression();
+//		$$->append_code($1);
 	}
 	;
 // | global_variable SEMICOLON {/* dosomething */}

@@ -1,4 +1,4 @@
-{
+int main() {
   int n = 10;
   int f[10000];
   int i;

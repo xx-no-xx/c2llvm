@@ -1,14 +1,7 @@
 // 用于实际生成llvm ir的generator
-
 #include "generator.h"
 
 /* ------------------ ASTContext 方法的实现 ---------------- */
-
-// TODO: 载入参数
-// # void ASTContext::load_argument(ASTFunctionImp* function) {
-// # //  for(auto &arg: function->prototype->args) {
-// # //  }
-// # }
 
 llvm::Value* ASTContext::generate_condition(llvm::Value* condori) {
   llvm::Value* condinst;
@@ -92,7 +85,7 @@ int ASTContext::get_type(llvm::Type* type) {
     return TYPE_INT;
   } else if (type == llvm::Type::getInt8PtrTy(*(this->context))){
     return TYPE_CHAR_PTR;
-  } else if (type == llvm::Type::getFloatTy(*(this->context))) { 
+  } else if (type == llvm::Type::getFloatTy(*(this->context))) {
     return TYPE_FLOAT;
   } else if (type == llvm::Type::getInt1Ty(*(this->context))) {
     return TYPE_BOOL;
@@ -104,23 +97,8 @@ int ASTContext::get_type(llvm::Type* type) {
 */
 /* ----------------- 生成代码 ----------------------- */
 
-llvm::Value* ASTPrototype::generate(ASTContext* astcontext) {
-  // ? 我怀疑这个是否会被调用
-  return nullptr;
-}
-
 llvm::Value* ASTExpression::generate(ASTContext* astcontext) {
   // ? 我怀疑这个是否会被调用
-  return nullptr;
-}
-
-llvm::Value* ASTGeneralExpression::generate(ASTContext* astcontext) {
-  // * 无用，预留
-  return nullptr;
-}
-
-llvm::Value* ASTGeneralPrototype::generate(ASTContext* astcontext) {
-  // * 无用，预留
   return nullptr;
 }
 
@@ -193,7 +171,7 @@ llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
         var->getType()->getPointerElementType(), var,
         var_load_name);  // 将它load为右值 xxx_load = load xxx
     return var_load;
-  }else { // 参数
+  } else {  // 参数
     return astcontext->local_symboltable[this->get_name()];
   }
 }
@@ -229,7 +207,8 @@ llvm::Value* ASTFunctionProto::generate(ASTContext* astcontext) {
   for (auto item : this->args)
     funcArgs.push_back(astcontext->get_type(item.first));
   //根据前两者构成函数类型
-  llvm::FunctionType* FT = llvm::FunctionType::get(returnType, funcArgs, this->isVarArg);
+  llvm::FunctionType* FT =
+      llvm::FunctionType::get(returnType, funcArgs, this->isVarArg);
   //构造函数
   astcontext->current_m->getOrInsertFunction(this->name, FT);
   //设置参数名称
@@ -253,7 +232,7 @@ llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
   //将参数名称加入符号表
   unsigned int idx = 0;
   astcontext->local_symboltable.clear();
-  for (auto &Arg : TheFunc->args()) {
+  for (auto& Arg : TheFunc->args()) {
     astcontext->local_symboltable[std::string(Arg.getName())] = &Arg;
   }
 
@@ -261,7 +240,8 @@ llvm::Value* ASTFunctionImp::generate(ASTContext* astcontext) {
   // 它创造的bb会在函数的入口上。因为函数内部没有任何多余的bb了。
   this->function_entry->generate(astcontext);
   std::cout << "Function Generated!" << std::endl;
-  astcontext->builder->CreateRet(0);  // return
+  auto zero = new ASTInteger(0);
+  astcontext->builder->CreateRet(zero->generate(astcontext));  // return
   return nullptr;
 }
 

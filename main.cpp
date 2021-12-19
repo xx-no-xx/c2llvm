@@ -4,6 +4,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 
 #include "ast.h"
@@ -22,6 +24,7 @@ extern FILE* yyin;
 extern int yyparse();  // yacc & lex 以分析现有的文件
 // extern entry* entry;
 // extern ASTCodeBlockExpression* entry;
+njson json_result;
 
 void test_ast(ASTContext* context) {
   // 造一个空的函数参数列表
@@ -38,25 +41,25 @@ void test_ast(ASTContext* context) {
   auto funcadd = new ASTFunctionProto(TYPE_VOID, "add", args);
   auto addentry = new ASTCodeBlockExpression();
   auto addimp = new ASTFunctionImp(funcadd, addentry);
-  //c=a+b
+  // c=a+b
   auto a = new ASTVariableExpression("a");
   auto b = new ASTVariableExpression("b");
   auto c = new ASTVariableExpression("c");
   auto calc = new ASTBinaryExpression(OP_BI_ADD, a, b);
-  auto defc = new ASTVariableDefine(TYPE_INT, c, nullptr);  
+  auto defc = new ASTVariableDefine(TYPE_INT, c, nullptr);
   auto assignc = new ASTVariableAssign(c, calc);
   addentry->append_code(defc);
   addentry->append_code(assignc);
   //造字符串
 
-  //call printf
-  std::vector<ASTExpression *> printArgs;
+  // call printf
+  std::vector<ASTExpression*> printArgs;
   auto formatStr = new ASTGlobalStringExpression("%d\n");
   printArgs.push_back(formatStr);
   printArgs.push_back(c);
   auto callprint = new ASTCallExpression("printf", printArgs);
   addentry->append_code(callprint);
-  //args
+  // args
   addimp->generate(context);
   args.clear();
   // 造一个函数原型
@@ -89,10 +92,10 @@ void test_ast(ASTContext* context) {
   entry->append_code(assexp);
 
   auto x2 = new ASTArrayExpression("x", integer3);  // x[2]
-  auto ass2exp = new ASTArrayAssign(x2, x1); //x[2] = x[1]
+  auto ass2exp = new ASTArrayAssign(x2, x1);        // x[2] = x[1]
   entry->append_code(ass2exp);
 
-  vector<ASTExpression* >Args;
+  vector<ASTExpression*> Args;
   Args.clear();
   Args.push_back(static_cast<ASTExpression*>(x1));
   Args.push_back(static_cast<ASTExpression*>(x2));
@@ -178,6 +181,8 @@ void test_ast(ASTContext* context) {
   funcimp->debug();
   funcimp->generate(context);  // 生成函数的代码
 
+  json_result = funcimp->generate_json();
+
   // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用
   /* --------------------------------------------------------------- */
   /* --------------------------------------------------------------- */
@@ -187,20 +192,8 @@ void test_ast(ASTContext* context) {
 }
 
 void test_gen(ASTContext* context) {
-  // 造一个空的函数参数列表
-  std::vector<std::pair<int, ARGname> > args;
-  args.clear();
-
-  // 造一个函数原型
-  auto funcproto = new ASTFunctionProto(TYPE_VOID, "main", args);
-
-  // 造一个真正的函数实现
-  auto funcimp = new ASTFunctionImp(funcproto, entryCodeBlock);
+  entryCodeBlock->generate_from_root(context);
   entryCodeBlock->debug();
-
-  //  funcimp->debug();
-
-  funcimp->generate(context);  // 生成函数的代码
 }
 
 int main(int argc, char** argv) {
@@ -220,10 +213,19 @@ int main(int argc, char** argv) {
     test_ast(context);  // 生成AST与对应代码
     if (argc <= 2) {
       context->current_m->print(llvm::errs(), nullptr);  // 输出测试
+
+      std::ofstream out;
+      out.open("output.json", ios::out);
+      out << json_result.dump(4);
+      out.close();
     } else {
       std::error_code EC;
       llvm::raw_fd_ostream dest(argv[2], EC, llvm::sys::fs::OF_None);
       context->current_m->print(dest, nullptr);
+      std::ofstream out;
+      out.open("output.json", ios::out);
+      out << json_result.dump(4);
+      out.close();
     }
   } else if (strcmp(argv[1], "gen") == 0) {
     if (argc <= 2) {
@@ -243,9 +245,14 @@ int main(int argc, char** argv) {
     context->current_m->setTargetTriple(TargetTriple);  // 生成目标平台的信息
 
     test_gen(context);
+    std::ofstream out;
+    out.open("output.json", ios::out);
+    out << json_result.dump(4);
+    out.close();
 
     if (argc <= 3) {
       context->current_m->print(llvm::errs(), nullptr);  // 输出测试
+      std::cout << json_result.dump(4) << std::endl;
     } else {
       std::error_code EC;
       llvm::raw_fd_ostream dest(argv[3], EC, llvm::sys::fs::OF_None);

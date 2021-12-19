@@ -1,4 +1,4 @@
-{
+int main() {
   char f[100];
   f[0] = '\n';
   f[1] = 'a';
@@ -30,7 +30,4 @@
   if (flag) {
     int xxxx = flag;
   }
-
-
-
 }

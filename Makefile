@@ -1,14 +1,18 @@
-all: lex yacc compiler 
+all: lex yacc compiler
 
-OBJS =  generator.o \
+OBJS = 	generator.o \
 		main.o	 \
 		ast.o   \
 
 
 LLVMCONFIG = llvm-config
-CPPFLAGS = `$(LLVMCONFIG) --cxxflags --ldflags -std=c++11`
+CPPFLAGS = `$(LLVMCONFIG) --cxxflags --ldflags -fexceptions -std=c++11`
 LIBS = `$(LLVMCONFIG) --system-libs --libs core`
 
+
+# LIBVAR   = -ljsoncpp             指明需要链接动态库 libmytest.so
+# LIBPATH  =     指明 libmytest.so 的路径
+               
 clean:
 	$(RM) -rf $(OBJS) compiler
 	$(RM) -rf parser.out y.tab.cpp y.tab.hpp lex.yy.cpp y.output 
@@ -22,7 +26,8 @@ clean:
 #	clang++ $(CPPFLAGS) -o generator.cpp
 
 %.o: %.cpp
-	clang++ -c $(CPPFLAGS) -o $@ $<
+	clang++ -fexceptions -c $(CPPFLAGS) -o $@ $<
+
 
 lex:
 	flex -o lex.yy.cpp compiler.l
@@ -40,3 +45,4 @@ output:
 	llvm-as output.ll
 	llc -filetype=obj output.bc
 	gcc output.o -o output.out -no-pie
+

@@ -10,7 +10,8 @@
 #include <utility>
 #include <vector>
 
-#include "json/json.h"
+#include "json.hpp"
+using njson = nlohmann::json;
 
 // 环境
 class ASTContext;  // 用于存储当前语法分析树的上下文信息
@@ -50,8 +51,6 @@ class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condi
 class ASTWhileExpression;  // While循环，支持while(condition){code}
 
 // 预留
-class ASTGeneralExpression;  // not used: 预留
-class ASTGeneralPrototype;   // not used: 预留
 
 // Type Define
 #define TYPE_VOID 0
@@ -77,11 +76,12 @@ class ASTGeneralPrototype;   // not used: 预留
 #define OP_BI_MOD 10
 #define OP_BI_EQ 11
 #define OP_BI_NEQ 12
-
 #define OP_SI_ADDRESS 13  // 取地址
 #define OP_SI_NOT 14
 
 extern ASTCodeBlockExpression* entryCodeBlock;
+
+std::string getDefineStr(int type, int value);
 
 class ASTNode {
   // 所有AST结点的基类
@@ -93,6 +93,13 @@ class ASTNode {
   virtual llvm::Value* generate(ASTContext* astcontext) {
     // 生成该AST结点对应的llvmIR代码
     return nullptr;
+  }
+  virtual njson generate_json() {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    return v;
   }
   virtual llvm::Value* generate_ptr(ASTContext* astcontext) { return nullptr; }
   virtual std::string get_class_name() { return "ASTNode"; }
@@ -106,18 +113,6 @@ class ASTNode {
   */
 };
 
-class ASTPrototype : public ASTNode {
-  // 所有AST原型或者声明的基类
-  // 表达式不能作为左值
- public:
-  ASTPrototype() {}
-  virtual llvm::Value* generate(ASTContext* astcontext) override;
-  virtual std::string get_class_name() override { return "ASTPrototype"; }
-  virtual void debug() override {
-    std::cout << "this is " << get_class_name() << " " << std::endl;
-  }
-};
-
 class ASTExpression : public ASTNode {
   // 所有AST表达式的基类
  public:
@@ -129,25 +124,6 @@ class ASTExpression : public ASTNode {
     std::cout << "this is " << get_class_name() << " " << std::endl;
   }
 };
-
-class ASTGeneralPrototype : public ASTPrototype {
-  // TODO: 没有用，预留
- public:
-  ASTGeneralPrototype() {}
-  llvm::Value* generate(ASTContext* astcontext) override;
-  std::string get_class_name() override { return "ASTGeneralPrototype"; }
-  void debug() override {}
-};
-
-class ASTGeneralExpression : public ASTExpression {
-  // TODO: 没有用，预留
- public:
-  ASTGeneralExpression() {}
-  llvm::Value* generate(ASTContext* astcontext) override;
-  std::string get_class_name() override { return "ASTGeneralExpression"; }
-  void debug() override {}
-};
-
 class ASTCodeBlockExpression : public ASTExpression {
   // 该类对应着一序列的代码块，及一些AST的序列
 
@@ -183,6 +159,12 @@ class ASTCodeBlockExpression : public ASTExpression {
                   llvm::Value*);  // 将一个llvm中的symbol加入代码块的符号表。
   //代码块对应的基本块集合共享这些变量。因此，这些变量在实际IR实现中要被放在最前面。
   llvm::Value* get_symbol(std::string);  // 获取该名称的符号表
+  void generate_from_root(ASTContext* astcontext) {
+    for(auto& code: codes) {
+      std::cout << code->get_class_name() << std::endl;
+      code->generate(astcontext);
+    }
+  }
   void debug(void) override {
     std::cout << "this is " << get_class_name() << " with " << codes.size()
               << " codes in here" << std::endl;
@@ -190,6 +172,17 @@ class ASTCodeBlockExpression : public ASTExpression {
       code->debug();
       puts("");
     }
+  }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["class"] = get_class_name();
+
+    v["child"] = {};
+    for (auto& code : codes) {
+      v["child"].push_back(code->generate_json());
+    }
+    return v;
   }
 };
 
@@ -217,6 +210,17 @@ class ASTVariableExpression : public ASTExpression {
   }
   std::string get_class_name(void) override { return "ASTVariableExpression"; }
   void debug(void) override { std::cout << "var:" << name << " "; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+
+    v["attr"]["class"] = get_class_name();
+    v["attr"]["name"] = get_name();
+    v["attr"]["is_array"] = is_array;
+    v["attr"]["array_length"] = array_length;
+    v["child"] = njson();
+     return v;
+  }
 };
 
 class ASTVariableAssign : public ASTExpression {
@@ -236,9 +240,19 @@ class ASTVariableAssign : public ASTExpression {
               << " ";
     rhs->debug();
   }
+
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["class"] = get_class_name();
+    v["child"]["lhs"] = lhs->generate_json();
+    v["child"]["rhs"] = rhs->generate_json();
+    return v;
+  }
 };
 
-class ASTVariableDefine : public ASTPrototype {
+class ASTVariableDefine : public ASTExpression {
   // 给定了一个形如type lhs = rhs的变量声明
  private:
   int type;  // 参数类型
@@ -259,11 +273,21 @@ class ASTVariableDefine : public ASTPrototype {
     else
       std::cout << "none";
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["type"] = getDefineStr(1, type);
+    v["attr"]["class"] = get_class_name();
+    v["child"]["lhs"] = lhs->generate_json();
+    if (rhs) v["child"]["rhs"] = rhs->generate_json();
+    return v;
+  }
 };
 
 typedef ASTVariableDefine ARGdefine;  // 参数声明
 typedef std::string ARGname;          // 参数名称
-class ASTFunctionProto : public ASTPrototype {
+class ASTFunctionProto : public ASTExpression {
   // 声明了一个形如ret_type name(args)的函数
  private:
   int ret_type;      // 返回类型
@@ -284,6 +308,22 @@ class ASTFunctionProto : public ASTPrototype {
       std::cout << arg.first << " " << arg.second << std::endl;
     std::cout << "Function Prototype Name: " << name << std::endl;
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["ret_type"] = getDefineStr(1, ret_type);
+    v["attr"]["class"] = get_class_name();
+    v["attr"]["name"] = get_name();
+    v["attr"]["is_var_arg"] = isVarArg;
+    v["child"] = {};
+    for (auto& arg : args) {
+      njson x;
+      x["argtype"] = getDefineStr(1, arg.first);
+      x["argname"] = arg.second;
+      v["child"].push_back(x);
+    }
+    return v;
+  }
 };
 
 class ASTFunctionImp : public ASTExpression {
@@ -302,6 +342,15 @@ class ASTFunctionImp : public ASTExpression {
     function_entry->debug();
   }
   std::string get_class_name(void) override { return "ASTFunctionImp"; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["proto"] = prototype->generate_json();
+    v["attr"]["class"] = get_class_name();
+    if (function_entry) v["attr"]["code"] = function_entry->generate_json();
+    return v;
+  }
 };
 
 class ASTInteger : public ASTExpression {
@@ -315,6 +364,14 @@ class ASTInteger : public ASTExpression {
   int get_value(void) { return value; }
   std::string get_class_name(void) override { return "ASTInteger"; }
   void debug(void) override { std::cout << "[INTEGER]" << value << " "; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["value"] = value;
+    v["attr"]["class"] = get_class_name();
+    return v;
+  }
 };
 
 class ASTChar : public ASTExpression {
@@ -327,6 +384,14 @@ class ASTChar : public ASTExpression {
   int get_value(void) { return value; }
   std::string get_class_name(void) override { return "ASTInteger"; }
   void debug(void) override { std::cout << "[INTEGER]" << value << " "; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["value"] = char(value);
+    v["attr"]["class"] = get_class_name();
+    return v;
+  }
 };
 
 class ASTBinaryExpression : public ASTExpression {
@@ -346,6 +411,16 @@ class ASTBinaryExpression : public ASTExpression {
     std::cout << " [BinaryOperation]" << operation << " ";
     rhs->debug();
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["operation"] = getDefineStr(0, operation);
+    v["attr"]["class"] = get_class_name();
+    v["child"]["lhs"] = lhs->generate_json();
+    v["child"]["rhs"] = rhs->generate_json();
+    return v;
+  }
 };
 
 class ASTSingleExpression : public ASTExpression {
@@ -363,6 +438,15 @@ class ASTSingleExpression : public ASTExpression {
     std::cout << " [SingleOperation]" << operation << " ";
     exp->debug();
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["operation"] = getDefineStr(0, operation);
+    v["attr"]["class"] = get_class_name();
+    v["child"]["exp"] = exp->generate_json();
+    return v;
+  }
 };
 
 class ASTCallExpression : public ASTExpression {
@@ -377,9 +461,17 @@ class ASTCallExpression : public ASTExpression {
       : callee(_callee), args(_args) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return " ASTCallExpression"; }
-  void debug(void) override {
-    // TODO
-    return;
+  void debug(void) override { return; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["callee"] = callee;
+    v["attr"]["class"] = get_class_name();
+    v["child"] = {};
+    for (auto& e : args) {
+      v["child"].push_back(e->generate_json());
+    }
+    return v;
   }
 };
 
@@ -410,6 +502,16 @@ class ASTIfExpression : public ASTExpression {
     }
     std::cout << "[END IF/ELSE]";
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["condition"] = condition->generate_json();
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    v["child"]["ifcode"] = ifcode->generate_json();
+    v["child"]["elsecode"] = elsecode->generate_json();
+    return v;
+  }
 };
 
 class ASTWhileExpression : public ASTExpression {
@@ -430,6 +532,15 @@ class ASTWhileExpression : public ASTExpression {
     code->debug();
     std::cout << " }";
     std::cout << "[END WHILE]";
+  }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["condition"] = condition->generate_json();
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    v["child"]["code"] = code->generate_json();
+    return v;
   }
 };
 
@@ -465,6 +576,17 @@ class ASTForExpression : public ASTExpression {
     std::cout << " }";
     std::cout << "[END FOR]";
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["prepare"] = prepare->generate_json();
+    v["attr"]["condition"] = condition->generate_json();
+    v["attr"]["action"] = action->generate_json();
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    v["child"]["code"] = code->generate_json();
+    return v;
+  }
 };
 
 class ASTGlobalStringExpression : public ASTExpression {
@@ -477,6 +599,14 @@ class ASTGlobalStringExpression : public ASTExpression {
   llvm::Value* generate(ASTContext* astcontext) override;
   std::string get_class_name(void) override { return "ASTStringExpression"; }
   void debug(void) override { std::cout << Str << std::endl; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["string"] = Str;
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    return v;
+  }
 };
 
 class ASTArrayExpression : public ASTExpression {
@@ -497,6 +627,15 @@ class ASTArrayExpression : public ASTExpression {
     index->debug();
     std::cout << " ]";
   }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["name"] = get_name();
+    v["attr"]["index"] = index->generate_json();
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    return v;
+  }
 };
 
 class ASTArrayAssign : public ASTExpression {
@@ -514,6 +653,15 @@ class ASTArrayAssign : public ASTExpression {
     lhs->debug();
     std::cout << "[assign] = ";
     rhs->debug();
+  }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["attr"]["class"] = get_class_name();
+    v["child"] = njson();
+    v["child"]["lhs"] = lhs->generate_json();
+    v["child"]["rhs"] = rhs->generate_json();
+    return v;
   }
 };
 
