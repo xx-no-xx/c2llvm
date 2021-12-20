@@ -1,30 +1,23 @@
-// 判断回文字符串
-extern int scanf(char *s, ...);
-extern int printf(char *s, ...);
+extern int scanf(char* s, ...);
+extern int printf(char* s, ...);
 
 int main() {
   char f[100];
-  // 输入
+  printf("回文检测：");
+  printf("please enter str:");
   scanf("%s", f);
-  int len;
-  len = 0;
-  // strlen
-  char eof;
-  eof = '\0';
-  while(f[len] != eof) {
-    len = len +  1;
+  int len = 0;
+  while (f[len]) {
+    len = len + 1;
   }
-  // 判断
   int i = 0;
   int j = len - 1;
-  while(i < j) {
-    if (f[i] != f[j]) {
-      printf("no");
-      return 0;
-    }
-    i = i + 1;
-    j = j - 1;
+  int flag = 1;
+  for (i = 0, j = len - 1; i < j && f[i] == f[j]; i = i + 1, j = j - 1) {
   }
-  printf("yes");
-  return 0;
+  if (i >= j) {
+    printf("yes");
+  } else {
+    printf("no");
+  }
 }

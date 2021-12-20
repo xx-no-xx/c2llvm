@@ -423,7 +423,6 @@ llvm::Value* ASTForExpression::generate(ASTContext* astcontext) {
   this->prepare->generate(astcontext);
   astcontext->builder->SetInsertPoint(lst);  // 从last -> prepare
   astcontext->builder->CreateBr(prepare->entryBB);
-  // todo: if prepare return here
   astcontext->builder->SetInsertPoint(prepare->get_exit());
 
   auto stBB = llvm::BasicBlock::Create(*(astcontext->context), "",

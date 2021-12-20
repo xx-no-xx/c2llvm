@@ -200,7 +200,7 @@ code_block:
 
 // while循环块
 loop_exp: 
-	WHILE TLPAREN compare_expression TRPAREN code_block{
+	WHILE TLPAREN logic_expression TRPAREN code_block{
 		$$ = new ASTWhileExpression($3, $5);
 		// TODO: $$ = new ASTWhile($3, $5);
 		std::cout<< "get while_loop" << std::endl;
@@ -219,13 +219,13 @@ condition_exp:
 
 // for循环块
 for_exp:
-	FOR TLPAREN for_assign_block SEMICOLON compare_expression SEMICOLON for_assign_block TRPAREN code_block{
+	FOR TLPAREN for_assign_block SEMICOLON logic_expression SEMICOLON for_assign_block TRPAREN code_block{
 		$$ = new ASTForExpression($5, $9, $3, $7); 
 	}
-	| FOR TLPAREN for_assign_block SEMICOLON compare_expression SEMICOLON TRPAREN code_block{
+	| FOR TLPAREN for_assign_block SEMICOLON logic_expression SEMICOLON TRPAREN code_block{
 		$$ = new ASTForExpression($5, $8, $3);
 	}
-	| FOR TLPAREN SEMICOLON compare_expression SEMICOLON TRPAREN code_block{
+	| FOR TLPAREN SEMICOLON logic_expression SEMICOLON TRPAREN code_block{
 		$$ = new ASTForExpression($4, $7);
 	}
 
@@ -405,9 +405,9 @@ compare_expression:
 	| calculate_expression TCGE calculate_expression{
 		$$ = new ASTBinaryExpression(OP_BI_MOREEQ, $1, $3);} // >=
 	| calculate_expression TCEQ calculate_expression{
-		$$ = new ASTBinaryExpression(OP_BI_MORE, $1, $3);} // ==
+		$$ = new ASTBinaryExpression(OP_BI_EQ, $1, $3);} // ==
 	| calculate_expression TCNE calculate_expression{
-		$$ = new ASTBinaryExpression(OP_BI_MOREEQ, $1, $3);} // !=
+		$$ = new ASTBinaryExpression(OP_BI_NEQ, $1, $3);} // !=
 	;
 
 // 逻辑式，一定可以拆分为逻辑与的或

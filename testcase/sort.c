@@ -4,20 +4,19 @@ extern int printf(char* s, ...);
 int main() {
   int n = 100;
   int f[10000];
-  int i;
-  int j;
-  i = 0;
-  j = 0;
+
+  printf("排序\n");
+  printf("please enter n:");
   scanf("%d", &n);
-  while (i < n) {
+
+  printf("please enter f[i]:");
+  int i = 0;
+  int j = 0;
+  for (i = 0; i < n; i = i + 1) {
     scanf("%d", &f[i]);
-    i = i + 1;
   }
-  i = 0;
-  int id;
-  int tmp;
-  while (i < n) {
-    id = i;
+  for (i = 0; i < n; i = i + 1) {
+    int id = i;
     j = i + 1;
     while (j < n) {
       if (f[j] < f[id]) {
@@ -25,14 +24,12 @@ int main() {
       }
       j = j + 1;
     }
-    tmp = f[id];
+    int tmp = f[id];
     f[id] = f[i];
     f[i] = tmp;
-    i = i + 1;
   }
-  i = 0;
-  while (i < n) {
+  printf("result:");
+  for (i = 0; i < n; i = i + 1) {
     printf("%d ", f[i]);
-    i = i + 1;
   }
 }
