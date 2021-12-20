@@ -164,7 +164,13 @@ llvm::Value* ASTChar::generate(ASTContext* astcontext) {
 llvm::Value* ASTVariableExpression::generate(ASTContext* astcontext) {
   auto var = astcontext->get_codestack_top()->get_symbol(
       this->get_name());  // 获取符号表
+
   if (var != nullptr) {
+    if (var->getType()->getPointerElementType()->isArrayTy()) {
+      std::cout << "!!!!!!!!!!!!!!!!!!" << std::endl;
+      auto v = new ASTArrayExpression(this->name, new ASTInteger(0));
+      return v->generate_ptr(astcontext);
+    }
     auto var_load_name =
         var->getName() + llvm::Twine("_load");  // TODO: (测试用)取名为xxx_load
     auto var_load = astcontext->builder->CreateLoad(

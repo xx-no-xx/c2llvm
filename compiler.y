@@ -350,10 +350,6 @@ basic_expression:
 // 后缀表达式，如a, a[10], foo(a, b)，目前仅有数组
 postfix_expression: 
 	basic_expression {$$ = $1;}
-	| array_with_index_name {
-		$$ = $1;
-		std::cout << "postfix: array" << std::endl;
-	}
 	/* | func_with_args {
 		$$ = $1;
 	} */
