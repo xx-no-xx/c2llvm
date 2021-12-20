@@ -29,6 +29,9 @@ void save_value(std::string str);
 %}
 
 %%
+"..."		{ save_type("VARARG"); return VARARG; }
+"extern"	{ save_type("EXTERN"); return EXTERN; }
+
 "+"         { save_type("TADD"); return TADD;}
 "-"         { save_type("TSUB"); return TSUB;}
 "*"         { save_type("TMUL"); return TMUL;}
@@ -69,8 +72,6 @@ void save_value(std::string str);
 "break"		{ save_type("BREAK"); return BREAK; }
 "continue"	{ save_type("CONTINUE"); return CONTINUE; }
 "return"	{ save_type("RETURN"); return RETURN; }
-"extern"	{ save_type("EXTERN"); return EXTERN; }
-"..."		{ save_type("VARARG"); return VARARG; }
 
 "int" 		{ save_type("INT"); return INT; } // int标识符
 "char"		{ save_type("CHAR"); return CHAR; }

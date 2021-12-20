@@ -142,7 +142,8 @@ area: function_implementation {
 // 函数声明，目前为外部 extern int bar(int a, int b);
 function_declaration: EXTERN function_prototype SEMICOLON{
 	// 放进一张声明表？
-	functionDeclarations.push_back($2); 
+//	functionDeclarations.push_back($2); 
+	$$ = $2;
 }
 
 // 函数实现 int bar(int a, int b){...}
@@ -264,20 +265,21 @@ code_line:
 func_call_exp:
 	var_name TLPAREN call_list TRPAREN SEMICOLON {
 		$$ = new ASTCallExpression($1->get_name(), *$3);
+		std::cout << "function with args" << std::endl;
 	}
 	|var_name TLPAREN TRPAREN SEMICOLON {
 		$$ = new ASTCallExpression($1->get_name(), 
 		std::vector<ASTExpression*>());
 		std::cout << "function without args" << std::endl;
 	}
-	;
+;
 
 call_list:
-	basic_expression{
+	calculate_expression{
 		$$ = new std::vector<ASTExpression*>();
 		$$->push_back($1);
 	}
-	| call_list TCOMMA basic_expression{
+	| call_list TCOMMA calculate_expression{
 		$1->push_back($3);
 	}
 
@@ -342,6 +344,7 @@ basic_expression:
 	| STR_CONSTANT {
 		$$ = new ASTGlobalStringExpression(*$1);
 	}
+  |array_with_index_name  { $$ = $1; }
 	;
 
 // 后缀表达式，如a, a[10], foo(a, b)，目前仅有数组

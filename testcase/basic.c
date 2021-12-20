@@ -1,3 +1,6 @@
+extern int scanf(char* s, ...);
+extern int printf(char* s, ...);
+
 int main() {
   int n = 10;
   int f[10000];
@@ -5,6 +8,7 @@ int main() {
   int j;
   i = 0;
   j = 0;
+  scanf("%d", &n);
   while (i < n) {
     f[i] = n - i;
     i = i + 1;
@@ -29,6 +33,7 @@ int main() {
   i = 0;
   while (i < n) {
     int load_load = f[i];
+    printf("%d", f[i]);
     i = i + 1;
   }
 }

@@ -1,21 +1,18 @@
-// 一个排序的例子
-extern int scanf(char *s, ...);
-extern int printf(char *s, ...);
+extern int scanf(char* s, ...);
+extern int printf(char* s, ...);
 
 int main() {
-  int n;
+  int n = 100;
   int f[10000];
   int i;
   int j;
   i = 0;
   j = 0;
-  /* 输入 */
   scanf("%d", &n);
   while (i < n) {
     scanf("%d", &f[i]);
     i = i + 1;
   }
-  /* 排序 */
   i = 0;
   int id;
   int tmp;
@@ -33,11 +30,9 @@ int main() {
     f[i] = tmp;
     i = i + 1;
   }
-  /* 输出 */
   i = 0;
   while (i < n) {
     printf("%d ", f[i]);
-    i++;
+    i = i + 1;
   }
-  return 0;
 }

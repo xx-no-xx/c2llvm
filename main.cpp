@@ -102,99 +102,20 @@ void test_ast(ASTContext* context) {
   auto callAdd = new ASTCallExpression("add", Args);
   entry->append_code(callAdd);
 
-  /*
-    // 将它定义出来，值为上述的加法表达式
-    auto defexp = new ASTVariableDefine(
-        TYPE_INT, x,
-        dynamic_cast<ASTExpression*>(integer2));  // int lhs = 100;
-
-    entry->append_code(defexp);
-
-    auto delexp = new ASTBinaryExpression(OP_BI_SUB, x, integer);
-    auto assexp = new ASTVariableAssign(x, delexp);
-
-    auto whilecode = new ASTCodeBlockExpression();
-    whilecode->append_code(assexp);
-
-    auto whileexp = new ASTWhileExpression(x, whilecode);
-
-    entry->append_code(whileexp);
-
-    auto assexp2 = new ASTVariableAssign(x, integer2);
-
-    auto preparecode = new ASTCodeBlockExpression();
-    preparecode->append_code(assexp2);
-
-    auto actioncode = new ASTCodeBlockExpression();
-    actioncode->append_code(delexp);
-
-    auto forcode = new ASTCodeBlockExpression();
-    auto forexp = new ASTForExpression(x, forcode, preparecode, actioncode);
-
-
-    entry->append_code(forexp); */
-  //  auto whileexp = new AST
-
-  /* 下面是非常不好的实例 */
-  /* 不要用，之后可以删除 */
-
-  /*
-  auto if_code = new ASTCodeBlockExpression();
-  auto else_code = new ASTCodeBlockExpression();
-  auto if_code_2 = new ASTCodeBlockExpression();
-  auto else_code_2 = new ASTCodeBlockExpression();
-
-  auto y = new ASTVariableExpression("y");
-
-  auto defexp2 =
-      new ASTVariableDefine(TYPE_INT, y, dynamic_cast<ASTExpression*>(integer));
-
-  auto assexp = new ASTVariableAssign(y, x);
-
-  entry->append_code(dynamic_cast<ASTNode*>(defexp));
-  entry->debug();
-  if_code->append_code(dynamic_cast<ASTNode*>(defexp2));
-  if_code_2->append_code(dynamic_cast<ASTNode*>(defexp2));
-
-  else_code->append_code(dynamic_cast<ASTNode*>(defexp2));
-  else_code->append_code(dynamic_cast<ASTNode*>(assexp));
-
-  else_code_2->append_code(dynamic_cast<ASTNode*>(defexp2));
-  else_code_2->append_code(dynamic_cast<ASTNode*>(assexp));
-
-  auto ifexp = new ASTIfExpression(x, if_code, else_code);
-
-  auto ifexp_a = new ASTIfExpression(x, if_code_2, else_code_2);
-
-  auto bb = new ASTCodeBlockExpression();
-
-  bb->append_code(ifexp);
-
-  auto bb2 = new ASTCodeBlockExpression();
-
-  bb2->append_code(ifexp_a);
-
-  auto ifexp2 = new ASTIfExpression(x, bb, bb2);
-
-  entry->append_code(dynamic_cast<ASTNode*>(ifexp2)); */
-
   funcimp->debug();
   funcimp->generate(context);  // 生成函数的代码
 
   json_result = funcimp->generate_json();
-
-  // 上面这一部分是应该在yacc中完成的。现在仅仅是测试用
-  /* --------------------------------------------------------------- */
-  /* --------------------------------------------------------------- */
-  /* --------------------------------------------------------------- */
-  /* --------------------------------------------------------------- */
-  /* --------------------------------------------------------------- */
 }
 
 void test_gen(ASTContext* context) {
+  json_result = entryCodeBlock->generate_json();
+  std::ofstream out;
+  out.open("output.json", ios::out);
+  out << json_result.dump(4);
+  out.close();
   entryCodeBlock->generate_from_root(context);
   entryCodeBlock->debug();
-  json_result = entryCodeBlock->generate_json();
 }
 
 int main(int argc, char** argv) {
@@ -246,10 +167,6 @@ int main(int argc, char** argv) {
     context->current_m->setTargetTriple(TargetTriple);  // 生成目标平台的信息
 
     test_gen(context);
-    std::ofstream out;
-    out.open("output.json", ios::out);
-    out << json_result.dump(4);
-    out.close();
 
     if (argc <= 3) {
       context->current_m->print(llvm::errs(), nullptr);  // 输出测试
