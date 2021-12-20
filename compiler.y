@@ -62,7 +62,7 @@
 %token <type> TAND TOR TCEQ TCNE TCLT TCLE TCGT TCGE
 %token <type> TLPAREN TRPAREN TLBRACKET TRBRACKET TLBRACE TRBRACE
 %token <type> TCR TCOMMA TDOT
-%token <type> IF ELSE WHILE BREAK CONTINUE RETURN FOR VARARG
+%token <type> IF ELSE WHILE BREAK CONTINUE RETURN FOR VARARG EXTERN
 %token <type> ASSIGN SEMICOLON
 %token <int_value> INT_CONSTANT
 %token <str_value> IDENTIFIER STR_CONSTANT
@@ -80,7 +80,7 @@
 %type <expression> basic_expression postfix_expression primary_expression sum_expression calculate_expression compare_expression assign_expression 
 %type <expression> logic_expression logic_and_expression
 %type <expression> code_line assign_line func_call_exp
-%type <expression_list> code_lines 
+%type <expression_list> code_lines call_list
 %type <var_list> arg_list
 %type <variable_define> var_defination
 %type <type> type_specifier
@@ -139,10 +139,10 @@ area: function_implementation {
 // | global_variable SEMICOLON {/* dosomething */}
 // TODO: 全局变量声明 global_variable : { /* dosomething */ }
 
-// 函数声明 int bar(int a, int b);
-function_declaration: function_prototype SEMICOLON{
+// 函数声明，目前为外部 extern int bar(int a, int b);
+function_declaration: EXTERN function_prototype SEMICOLON{
 	// 放进一张声明表？
-	functionDeclarations.push_back($1); 
+	functionDeclarations.push_back($2); 
 }
 
 // 函数实现 int bar(int a, int b){...}
@@ -262,15 +262,24 @@ code_line:
 
 // 函数调用行
 func_call_exp:
-/*	var_name TLPAREN call_list TRPAREN SEMICOLON {
+	var_name TLPAREN call_list TRPAREN SEMICOLON {
 		$$ = new ASTCallExpression($1->get_name(), *$3);
 	}
-	| */var_name TLPAREN TRPAREN SEMICOLON {
+	|var_name TLPAREN TRPAREN SEMICOLON {
 		$$ = new ASTCallExpression($1->get_name(), 
 		std::vector<ASTExpression*>());
 		std::cout << "function without args" << std::endl;
 	}
 	;
+
+call_list:
+	basic_expression{
+		$$ = new std::vector<ASTExpression*>();
+		$$->push_back($1);
+	}
+	| call_list TCOMMA basic_expression{
+		$1->push_back($3);
+	}
 
 // 赋值运算行
 assign_line:
