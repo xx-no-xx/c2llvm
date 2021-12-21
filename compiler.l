@@ -6,8 +6,7 @@ FS			(f|F|l|L)
 IS			(u|U|l|L)* 
 
 
-/* 上方是一些便于正则表达式的定义，D指数字，L指字母？，H指十六进制可能用到的东西，E指表达式，其余含义不明*/
-/* TODO: 处于不明原因对其保留, 后续需要修改 */
+/* 上方是一些便于正则表达式的定义，D指数字，L指字母？，H指十六进制可能用到的东西，E指表达式，*/
 
 %{
 #include <cstdio> // 因为在此处使用了printf
@@ -75,11 +74,12 @@ void save_value(std::string str);
 
 "int" 		{ save_type("INT"); return INT; } // int标识符
 "char"		{ save_type("CHAR"); return CHAR; }
-"double"	{ save_type("DOUBLE"); return DOUBLE; }
+"double"	{ save_type("DOUBLE"); return FLOAT; }
+"float"	{ save_type("FLOAT"); return FLOAT; }
 "void"		{ save_type("VOID"); return VOID; }
 "char*"		{ save_type("CHAR_PTR"); return CHAR_PTR;}
 
-{D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } // TODO: 修改为正确的正则表达式
+{D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } 
 
 '(\\.|[^\\'])' {
     // save_type("CHAR_LITERAL");
@@ -106,25 +106,18 @@ void save_value(std::string str);
 {L}({L}|{D})* { save_value("IDENTIFIER"); return IDENTIFIER; }
 
 ([1-9][0-9]*)|0|([0-9]+\.[0-9]*) {
-    double temp;
-    sscanf(yytext, "%lf", &temp);
-    yylval.double_value = temp;
-    return DOUBLE_CONSTANT;
+    float temp;
+    sscanf(yytext, "%f", &temp);
+    yylval.float_value = temp;
+    return FLOAT_CONSTANT;
 } // double型
 
-[ \t\v\f] // remove /n
+[ \t\v\f] 
 . {
     fprintf(stderr, "lexical error.\n");
     exit(1);
 }
 %%
-
-/*
-下面是一个放在%%之中的例子:
-"int"			{ TESTONLY(); yylval.type = (char*)("int_type"); yylval.number = 123123; return INT; } // 匹配"int", 每个匹配需要返回一个标识符，标识符会被随机分配一个int，
-{D}+{IS}? { printf("CONSTANT:%s\n", yytext); yylval.type = (char*)("constant_type"); return CONSTANT; } // 匹配一个十进制数（这个匹配可能是有问题的） . 在{}里写操作。
-"tni"     { yylval.number = 321321; return INT; }
-*/
 
 // save_type: 保存这个变量的类型，到yylval.type
 // 	yylval.type = new std::string(str);

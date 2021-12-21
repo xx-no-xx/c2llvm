@@ -25,15 +25,11 @@
 		yyparse();
 	}
 
-	int yywrap() { // ? TODO: 目的不明
+	int yywrap() {
 		return 1;
 	}
 
 
-//	int main() { // TODO: 测试用，为了实验它是否ok
-//		yyparse();
-//		return 0;
-//	}
 %}
 
 // 扩展的yylval， yylval会在lex和yacc中传递
@@ -50,8 +46,7 @@
 	int int_value; // 存储int型const的实际值
 	std::string *str_value; // 存储identifier的实际值
 	std::string *char_value;	// char型的实际值
-	double double_value;	// double型的实际值
-//  std::string *type;  // TODO: 存储type, 后续为了效率可以修改为int
+	float float_value;	// float型的实际值
   	int type;
 	std::vector<ASTExpression*> *expression_list;	// 多行代码
 	std::vector<std::pair<int, std::string> > *var_list;	// 参数列表
@@ -67,7 +62,7 @@
 %token <int_value> INT_CONSTANT
 %token <str_value> IDENTIFIER STR_CONSTANT
 %token <char_value> CHAR_CONSTANT
-%token <double_value> DOUBLE_CONSTANT
+%token <float_value> FLOAT_CONSTANT FLOAT
 // %token <xxx> 制定token从yylval.xxx获取
 
 // 非终结符
@@ -96,28 +91,8 @@
 %%
 /* 接下来是语法部分 */
 
-//#  /* 最简单的一个文法例子 */
-//#  /* 运行这个东西，除非一直输入int[一个数字]这样，否则就会提示syntax error */
-//#  
-//#  commands : /* commands -> commands | command */
-//#  | commands command
-//#  ;
-//#  
-//#  /* 这里似乎会有递归左右的问题 */
-//#  
-//#  command :
-//#  INT CONSTANT { 
-//#  	// 匹配上了command->INTCONSTANT后
-//#  	// 在这里写要干什么
-//#  //	printf("i found a 'intconstant' struct: <token>%d, <type>%s", $1, $2);
-//#  	std::cout << "I found a 'intconstant' struct" << $1 << " " << $2 << std::endl;
-//#  	// $x编号从1开始是参数
-//#  	// $1对应的INT是<number>，所以自己选择了number里存的值
-//#  	// $2对应的是CONSTANT是<type>，所以选择了type里存的值
-//#  	// 考虑之后在这里写，有关中间代码生成的函数: 依赖于LLVM，生成LLVM IR
-//#  }
 
-entry: areas {entryCodeBlock = $1; } // 把语法分析树中entry的指针交给entryCodeBlock, 因为yacc是从底向上的，这里会被最后访问。此时，codeblock已经搭建好，于是把它交给entryCodeBlock，供后续的代码生成。
+entry: areas {entryCodeBlock = $1; } 
 
 // 将程序划分为若干个区域
 areas: area {$$ = new ASTCodeBlockExpression();
@@ -127,33 +102,25 @@ areas: area {$$ = new ASTCodeBlockExpression();
 
 area: function_implementation {
 		$$ = $1;
-		//new ASTCodeBlockExpression();
-//		$$->append_code($1);
 	}
 	| function_declaration {
 		$$ = $1;
-		//new ASTCodeBlockExpression();
-//		$$->append_code($1);
 	}
 	;
 // | global_variable SEMICOLON {/* dosomething */}
 // TODO: 全局变量声明 global_variable : { /* dosomething */ }
 
-// 函数声明，目前为外部 extern int bar(int a, int b);
+// 函数声明，外部 extern int bar(int a, int b);
 function_declaration: EXTERN function_prototype SEMICOLON{
-	// 放进一张声明表？
-//	functionDeclarations.push_back($2); 
 	$$ = $2;
 }
 
 // 函数实现 int bar(int a, int b){...}
 function_implementation: 
 	function_prototype code_block {
-		// 暂时这么写，不支持函数
 		$$ = new ASTFunctionImp($1, $2);
 		std::cout << "func_imple" << std::endl;
 	}
-//	| test_expression
 	;
 
 // 函数原型 int foo(int a, int b)
@@ -202,7 +169,6 @@ code_block:
 loop_exp: 
 	WHILE TLPAREN logic_expression TRPAREN code_block{
 		$$ = new ASTWhileExpression($3, $5);
-		// TODO: $$ = new ASTWhile($3, $5);
 		std::cout<< "get while_loop" << std::endl;
 	}
 
@@ -242,14 +208,14 @@ code_lines:
 
 // 单行语句(缩起来的)
 code_line:
-	var_defination{$<variable_define>$ = $1;} // $$ = $1会报错
+	var_defination{$<variable_define>$ = $1;} 
 	| assign_line{
 		$$ = $1;
 		std::cout << "get assign line" << std::endl;
 	}
 	| loop_exp{
 		$$ = $1;
-	}	// ???没有操作？疑惑
+	}	
 	| condition_exp{
 		$$ = $1;
 	}
@@ -310,11 +276,6 @@ var_defination:
 		$2->set_array($4);
 		$$ = new ASTVariableDefine($1, $2, nullptr);
 	}
-	// char a[10] = "abc";
-/*	| CHAR var_name TLBRACKET INT_CONSTANT TRBRACKET ASSIGN STR_CONSTANT SEMICOLON {
-		$2->set_array($4);
-//		$$ = new ASTVaribleDefine($1, $2, ASTGlobalStringExpression(*$7));
-	}*/
 	;
 
 // 基本表达式，如变量名、常量
@@ -336,10 +297,9 @@ basic_expression:
 			result = (char)atoi(number_str.c_str());
 		}
 		$$ = new ASTChar(int(result));
-		// TODO: 是否有需要使用char的情况
 	}
-	| DOUBLE_CONSTANT {
-		// TODO: $$ = new ASTDoubleExpression($1);
+	| FLOAT_CONSTANT {
+		$$ = new ASTFloat($1);
 	}
 	| STR_CONSTANT {
 		$$ = new ASTGlobalStringExpression(*$1);
@@ -350,9 +310,6 @@ basic_expression:
 // 后缀表达式，如a, a[10], foo(a, b)，目前仅有数组
 postfix_expression: 
 	basic_expression {$$ = $1;}
-	/* | func_with_args {
-		$$ = $1;
-	} */
 	;
 
 // 一元表达式，如a!, *a，目前等价于后缀表达式
@@ -360,11 +317,9 @@ primary_expression:
 	postfix_expression {$$ = $1;}
 	| TBIT_NOT postfix_expression {
 		$$ = new ASTSingleExpression(OP_SI_NOT, $2);
-		std::cout << "not" << $2->get_class_name() << std::endl;
 	}
 	| TBIT_AND postfix_expression {
 		$$ = new ASTSingleExpression(OP_SI_ADDRESS, $2);
-		std::cout << "address" << $2->get_class_name() << std::endl;
 	}
 	;
 
@@ -434,7 +389,6 @@ assign_expression:
 	}
 	| array_with_index_name ASSIGN calculate_expression{
 		$$ = new ASTArrayAssign($1, $3);
-		std::cout << "++++++++++++++++++++++++++++++++" << std::endl;
 	}
 	;
 
@@ -460,15 +414,13 @@ type_specifier:
 	VOID {$$ = TYPE_VOID; }
 	| INT {$$ = TYPE_INT; }
 	| CHAR {$$ = TYPE_CHAR; }
-	| DOUBLE {$$ = TYPE_DOUBLE; }
+	| DOUBLE {$$ = TYPE_FLOAT; }
+	| FLOAT {$$ = TYPE_FLOAT; }
 	| CHAR_PTR {$$ = TYPE_CHAR_PTR; }
 	;
 
-
 /* 语法部分结束 */
 %%
-
-/* 这后面可以实现，一些出现在最开始部分的函数 */
 
 void pass() {
 	return;

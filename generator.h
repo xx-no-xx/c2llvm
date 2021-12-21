@@ -28,7 +28,6 @@ class ASTContext {
 
   std::map<std::string, llvm::Value *> global_symboltable;
   std::map<std::string, llvm::Value *> local_symboltable; // 函数参数符号表
-  // TODO: 全局符号表
 
   ASTContext() {
     context = new llvm::LLVMContext();
@@ -68,8 +67,6 @@ class ASTContext {
   // 通过我们自定义的类型，返回llvm的type
 
   llvm::Value *generate_condition(llvm::Value *);
-
-  // TODO: ERROR WARNING! 用于输出警告的错误函数
 };
 
 #endif

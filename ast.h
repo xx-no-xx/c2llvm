@@ -28,7 +28,7 @@ class
 // 函数相关
 class ASTFunctionProto;   // 函数原型
 class ASTFunctionImp;     // 函数实现
-class ASTCallExpression;  // todo: 函数调用实现
+class ASTCallExpression;  // 函数调用实现
 
 // 非数组/字符串变量相关
 class ASTVariableDefine;  // 变量定义的类，形如int a = b;
@@ -44,6 +44,7 @@ class ASTSingleExpression;  // 一元运算的类，取地址，取反
 class ASTInteger;                 // int 常量，形如998244353
 class ASTGlobalStringExpression;  // 字符串字面量
 class ASTChar;                    // char
+class ASTFloat;                    // float
 
 // 控制流
 class ASTIfExpression;  // IF/ELSE分支, 支持(condition, if_code)以及(condition,
@@ -312,14 +313,6 @@ class ASTFunctionProto : public ASTExpression {
     v["attr"]["name"] = get_name();
     v["attr"]["is_var_arg"] = isVarArg;
     v["child"] = njson();
-    int count = 0;
-    for (auto& arg : args) {
-      njson x;
-      x["argtype"] = getDefineStr(1, arg.first);
-      x["argname"] = arg.second;
-      v["child"][count] = (x);
-      count++;
-    }
     return v;
   }
 };
@@ -380,13 +373,33 @@ class ASTChar : public ASTExpression {
   ASTChar(int _value) : value(_value) {}
   llvm::Value* generate(ASTContext* astcontext) override;
   int get_value(void) { return value; }
-  std::string get_class_name(void) override { return "ASTInteger"; }
-  void debug(void) override { std::cout << "[INTEGER]" << value << " "; }
+  std::string get_class_name(void) override { return "ASTChar"; }
+  void debug(void) override { std::cout << "[CHAR]" << value << " "; }
   njson generate_json(void) override {
     njson v;
     v["attr"] = njson();
     v["child"] = njson();
     v["attr"]["value"] = char(value);
+    v["attr"]["class"] = get_class_name();
+    return v;
+  }
+};
+
+class ASTFloat : public ASTExpression {
+ private:
+  float value;
+
+ public:
+  ASTFloat(float _value) : value(_value) {}
+  llvm::Value* generate(ASTContext* astcontext) override;
+  int get_value(void) { return value; }
+  std::string get_class_name(void) override { return "ASTFloat"; }
+  void debug(void) override { std::cout << "[FLOAT]" << value << " "; }
+  njson generate_json(void) override {
+    njson v;
+    v["attr"] = njson();
+    v["child"] = njson();
+    v["attr"]["value"] = value;
     v["attr"]["class"] = get_class_name();
     return v;
   }
