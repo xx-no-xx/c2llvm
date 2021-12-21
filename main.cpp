@@ -102,7 +102,6 @@ void test_ast(ASTContext* context) {
   auto callAdd = new ASTCallExpression("add", Args);
   entry->append_code(callAdd);
 
-  funcimp->debug();
   funcimp->generate(context);  // 生成函数的代码
 
   json_result = funcimp->generate_json();
@@ -115,7 +114,6 @@ void test_gen(ASTContext* context) {
   out << json_result.dump(4);
   out.close();
   entryCodeBlock->generate_from_root(context);
-  entryCodeBlock->debug();
 }
 
 int main(int argc, char** argv) {
@@ -171,11 +169,21 @@ int main(int argc, char** argv) {
     if (argc <= 3) {
       context->current_m->print(llvm::errs(), nullptr);  // 输出测试
       std::cout << json_result.dump(4) << std::endl;
+      printf("Compiler Done: IR print in screen, json saved in output.json\n");
     } else {
       std::error_code EC;
       llvm::raw_fd_ostream dest(argv[3], EC, llvm::sys::fs::OF_None);
       context->current_m->print(dest, nullptr);
+      std::string name = argv[2];
+      name.append(".out");
+      std::string exe = "clang ";
+      exe.append(argv[3]);
+      exe.append(" -o ");
+      exe.append(name);
+      system(exe.data());
+      printf("Compiler Done: IR in %s, exe in %s, json saved in output.json\n", argv[3], name.c_str());
     }
+
 
   } else {
     std::cout << "panic: invalid argument" << std::endl;

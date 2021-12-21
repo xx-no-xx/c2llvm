@@ -84,14 +84,11 @@ void save_value(std::string str);
 '(\\.|[^\\'])' {
     // save_type("CHAR_LITERAL");
     yylval.char_value = new std::string(yytext);
-	std::cout << "char: " << yytext << std::endl; // debug用
     return CHAR_CONSTANT;
 }	// 字符
 
 \"(\\.|[^\\"])*\" {
-	std::cout << "string: " << yytext << std::endl;
 	yylval.str_value = new std::string(yytext);
-	std::cout << "string: " << *yylval.str_value << std::endl;
 	yylval.str_value->erase(remove(yylval.str_value->begin(), yylval.str_value->end(), '"'), yylval.str_value->end()); 
   std::string::size_type pos = 0;
 	std::string sub_str = {R"(\n)"};
@@ -99,7 +96,6 @@ void save_value(std::string str);
   while((pos = yylval.str_value->find(sub_str)) != std::string::npos)  {
       yylval.str_value->replace(pos, sub_str.length(), rep_str);
   }
-	std::cout << "string: " << *yylval.str_value << std::endl;
 	return STR_CONSTANT;
 }
 
