@@ -119,7 +119,6 @@ function_declaration: EXTERN function_prototype SEMICOLON{
 function_implementation: 
 	function_prototype code_block {
 		$$ = new ASTFunctionImp($1, $2);
-		std::cout << "func_imple" << std::endl;
 	}
 	;
 
@@ -128,15 +127,12 @@ function_prototype :
 	type_specifier var_name TLPAREN TRPAREN{
 		$$ = new ASTFunctionProto($1, $2->get_name(), 
 		std::vector<std::pair<int, std::string> >());
-		std::cout << "proto empty matched" << std::endl;
 	}
 	| type_specifier var_name TLPAREN arg_list TRPAREN{
 		$$ = new ASTFunctionProto($1, $2->get_name(), *$4);
-		std::cout << "proto list matched" << std::endl;
 	}
 	| type_specifier var_name TLPAREN arg_list TCOMMA VARARG TRPAREN{
 		$$ = new ASTFunctionProto($1, $2->get_name(), *$4, true);
-		std::cout << "proto vararg matched" << std::endl;
 	}
 	;
 
@@ -155,13 +151,11 @@ arg_list:
 code_block: 
 	TLBRACE TRBRACE {
 		$$ = new ASTCodeBlockExpression();
-		std::cout << "code_block" << std::endl;
 	}
 	| TLBRACE code_lines TRBRACE{
 		$$ = new ASTCodeBlockExpression();
 		for(auto p = $2->begin(); p != $2->end(); p++)
 			$$->append_code(*p);
-		std::cout << "enter code_lines" << std::endl;
 	}
 	;
 
@@ -169,18 +163,15 @@ code_block:
 loop_exp: 
 	WHILE TLPAREN logic_expression TRPAREN code_block{
 		$$ = new ASTWhileExpression($3, $5);
-		std::cout<< "get while_loop" << std::endl;
 	}
 
 // 条件块
 condition_exp:
 	IF TLPAREN logic_expression TRPAREN code_block %prec LOWER_THAN_ELSE{
 		$<expression>$ = new ASTIfExpression($3, $5);
-		std::cout << "get if_block without else" << std::endl;
 	}
 	| IF TLPAREN logic_expression TRPAREN code_block ELSE code_block{
 		$<expression>$ = new ASTIfExpression($3, $5, $7);
-		std::cout << "get if_block with else" << std::endl;
 	}
 
 // for循环块
@@ -211,7 +202,6 @@ code_line:
 	var_defination{$<variable_define>$ = $1;} 
 	| assign_line{
 		$$ = $1;
-		std::cout << "get assign line" << std::endl;
 	}
 	| loop_exp{
 		$$ = $1;
@@ -231,12 +221,10 @@ code_line:
 func_call_exp:
 	var_name TLPAREN call_list TRPAREN SEMICOLON {
 		$$ = new ASTCallExpression($1->get_name(), *$3);
-		std::cout << "function with args" << std::endl;
 	}
 	|var_name TLPAREN TRPAREN SEMICOLON {
 		$$ = new ASTCallExpression($1->get_name(), 
 		std::vector<ASTExpression*>());
-		std::cout << "function without args" << std::endl;
 	}
 ;
 
@@ -261,7 +249,6 @@ assign_line:
 // 变量名，即标识符
 var_name: 
 	IDENTIFIER{
-		std::cout << "var_name" << std::endl;
 		$$ = new ASTVariableExpression(*$1);
 	}
 	;

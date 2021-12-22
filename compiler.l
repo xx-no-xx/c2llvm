@@ -22,62 +22,62 @@ using namespace std;
 #define MAX_TYPE_NAME 100
 
 void TESTONLY();
-void save_type(std::string str);
 void save_value(std::string str);
 
 %}
 
 %%
-"..."		{ save_type("VARARG"); return VARARG; }
-"extern"	{ save_type("EXTERN"); return EXTERN; }
+"..."		{ return VARARG; }
+"extern"	{ return EXTERN; }
 
-"+"         { save_type("TADD"); return TADD;}
-"-"         { save_type("TSUB"); return TSUB;}
-"*"         { save_type("TMUL"); return TMUL;}
-"/"         { save_type("TDIV"); return TDIV;}
-"%"         { save_type("TMOD"); return TMOD;}
-"<<"        { save_type("TLSFT"); return TLSFT;}
-">>"        { save_type("TRSFT"); return TRSFT;}
-"|"         { save_type("TBIT_OR"); return TBIT_OR;}
-"&"         { save_type("TBIT_AND"); return TBIT_AND;}
-"^"         { save_type("TBIT_XOR"); return TBIT_XOR;}
-"!"         { save_type("TBIT_NOT"); return TBIT_NOT;}
+"+"         { return TADD;}
+"-"         { return TSUB;}
+"*"         { return TMUL;}
+"/"         { return TDIV;}
+"%"         { return TMOD;}
+"<<"        { return TLSFT;}
+">>"        { return TRSFT;}
+"|"         { return TBIT_OR;}
+"&"         { return TBIT_AND;}
+"^"         { return TBIT_XOR;}
+"!"         { return TBIT_NOT;}
 
-"&&"        { save_type("TAND"); return TAND;}
-"||"        { save_type("TOR"); return TOR;}
-"=" 		{ save_type("ASSIGN"); return ASSIGN; } // 赋值=号
-"=="        { save_type("TCEQ"); return TCEQ;}
-"!="        { save_type("TCNE"); return TCNE;}
-"<"         { save_type("TCLT"); return TCLT;}
-"<="        { save_type("TCLE"); return TCLE;}
-">"         { save_type("TCGT"); return TCGT;}
-">="        { save_type("TCGE"); return TCGE;}
+"&&"        { return TAND;}
+"||"        { return TOR;}
+"=" 		{ return ASSIGN; } // 赋值=号
+"=="        { return TCEQ;}
+"!="        { return TCNE;}
+"<"         { return TCLT;}
+"<="        { return TCLE;}
+">"         { return TCGT;}
+">="        { return TCGE;}
 
-"("         { save_type("TLPAREN"); return TLPAREN;}
-")"         { save_type("TRPAREN"); return TRPAREN;}
-"["         { save_type("TLBRACKET"); return TLBRACKET;}
-"]"         { save_type("TRBRACKET"); return TRBRACKET;}
-"{"         { save_type("TLBRACE"); return TLBRACE;}
-"}"         { save_type("TRBRACE"); return TRBRACE;}
+"("         { return TLPAREN;}
+")"         { return TRPAREN;}
+"["         { return TLBRACKET;}
+"]"         { return TRBRACKET;}
+"{"         { return TLBRACE;}
+"}"         { return TRBRACE;}
 
-","         { save_type("TCOMMA"); return TCOMMA;}
-"."         { save_type("TDOT"); return TDOT;}
-";" 		{ save_type("SEMICOLON"); return SEMICOLON; }  // 分号;
+","         { return TCOMMA;}
+"."         { return TDOT;}
+";" 		{ return SEMICOLON; }  // 分号;
 
-"if"		{ save_type("IF"); return IF; }
-"else"		{ save_type("ELSE"); return ELSE; }
-"while"		{ save_type("WHILE"); return WHILE; }
-"for"		{ save_type("FOR"); return FOR; }
-"break"		{ save_type("BREAK"); return BREAK; }
-"continue"	{ save_type("CONTINUE"); return CONTINUE; }
-"return"	{ save_type("RETURN"); return RETURN; }
+"if"		{ return IF; }
+"else"		{ return ELSE; }
+"while"		{ return WHILE; }
+"for"		{ return FOR; }
+"break"		{ return BREAK; }
+"continue"	{ return CONTINUE; }
+"return"	{ return RETURN; }
 
-"int" 		{ save_type("INT"); return INT; } // int标识符
-"char"		{ save_type("CHAR"); return CHAR; }
-"double"	{ save_type("DOUBLE"); return FLOAT; }
-"float"	{ save_type("FLOAT"); return FLOAT; }
-"void"		{ save_type("VOID"); return VOID; }
-"char*"		{ save_type("CHAR_PTR"); return CHAR_PTR;}
+"int" 		{ return INT; } // int标识符
+"char"		{ return CHAR; }
+"double"	{ return FLOAT; }
+"float"		{ return FLOAT; }
+"void"		{ return VOID; }
+"char*"		{ return CHAR_PTR;}
+"char *"	{ return CHAR_PTR;}
 
 {D}+ 		{ save_value("INT_CONSTANT"); return INT_CONSTANT; } 
 
@@ -114,12 +114,6 @@ void save_value(std::string str);
     exit(1);
 }
 %%
-
-// save_type: 保存这个变量的类型，到yylval.type
-// 	yylval.type = new std::string(str);
-void save_type(std::string str) {
-	return;
-}
 
 // save_value: 对于形如321这样的常数变量，通过str制定它被保存的value应该如何解析
 void save_value(std::string str) { 
