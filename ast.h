@@ -471,7 +471,7 @@ class ASTCallExpression : public ASTExpression {
   ASTCallExpression(const std::string& _callee, std::vector<CallArgument> _args)
       : callee(_callee), args(_args) {}
   llvm::Value* generate(ASTContext* astcontext) override;
-  std::string get_class_name(void) override { return " ASTCallExpression"; }
+  std::string get_class_name(void) override { return "ASTCallExpression"; }
   void debug(void) override { return; }
   njson generate_json(void) override {
     njson v;
